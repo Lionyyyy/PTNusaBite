@@ -1,0 +1,31 @@
+{
+  "name": "nusabite-erp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ERP web PT NusaBite Cepat Saji: Sales, CRM, Purchase, Inventory, Accounting, Invoicing, Employees (simulasi tugas kelompok Sistem Informasi).",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:reset": "node src/cli/reset.js",
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "evidence": "node e2e/evidence.js",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-session": "^2.1.1",
+    "ejs": "^3.1.10",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  },
+  "devDependencies": {
+    "eslint": "^10.1.0",
+    "playwright": "^1.56.1",
+    "qs": "^6.16.1"
+  }
+}
