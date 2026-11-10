@@ -1,5 +1,5 @@
 <%- include('../partials/top', { title }) %>
-<% const t = pk.picking_type; const can = perms['inventory.operate']; const listHref = '/inventory/pickings?type=' + t; %>
+<% const t = pk.picking_type; const can = canAction('inventory.operate', 'update'); const listHref = '/inventory/pickings?type=' + t; %>
 <div class="cp"><div class="crumbs"><span class="muted small">①</span><a href="/inventory">Inventory</a><span class="sep">/</span><a href="<%= listHref %>"><%= pk.type_label %>s</a><span class="sep">/</span><span><%= pk.number %></span></div><div></div></div>
 
 <% if (t === 'out' && pk.state === 'ready' && can) { %><form method="post" action="/inventory/pickings/<%= pk.id %>/validate" id="validate-form"><input type="hidden" name="_csrf" value="<%= csrf %>"><% } %>
@@ -16,8 +16,8 @@
         <button class="btn <%= pk.state === 'ready' ? 'btn-primary' : '' %>" type="submit" data-test="save-qc">Save Quality Check</button>
       <% } %>
       <% if (t === 'in' && pk.state === 'done') { %><span class="muted small">Receipt Done: kuantitas terkunci.</span><% } %>
-      <% if (t === 'out' && pk.state === 'done') { %><a class="btn" href="/inventory/pickings/<%= pk.id %>/return" data-test="return">Return</a><% } %>
     <% } %>
+    <% if (canAction('inventory.operate', 'create') && t === 'out' && pk.state === 'done') { %><a class="btn" href="/inventory/pickings/<%= pk.id %>/return" data-test="return">Return</a><% } %>
   </div>
   <%- include('../partials/statusbar', { stages, current: pk.state }) %>
 </div>
@@ -76,21 +76,21 @@
 </div>
 <% if ((t === 'out' && pk.state === 'ready' && can) || (t === 'in' && ['ready', 'qc'].includes(pk.state) && can)) { %></form><% } %>
 
-<% if (can && pk.state !== 'done' && pk.state !== 'cancel') { %>
+<% if ((can || canAction('inventory.operate', 'cancel')) && pk.state !== 'done' && pk.state !== 'cancel') { %>
 <div class="sheet" style="padding:10px 22px;display:flex;gap:8px;flex-wrap:wrap">
-  <% if (t === 'in' && pk.state === 'qc') { %>
+  <% if (can && t === 'in' && pk.state === 'qc') { %>
     <form method="post" action="/inventory/pickings/<%= pk.id %>/validate" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="validate-receipt">Validate Receipt</button></form>
   <% } %>
-  <% if (t === 'int' && pk.state === 'draft') { %>
+  <% if (can && t === 'int' && pk.state === 'draft') { %>
     <form method="post" action="/inventory/pickings/<%= pk.id %>/todo" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="todo">Mark as To Do</button></form>
   <% } %>
-  <% if (t === 'int' && pk.state === 'ready') { %>
+  <% if (can && t === 'int' && pk.state === 'ready') { %>
     <form method="post" action="/inventory/pickings/<%= pk.id %>/validate" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="validate">Validate</button></form>
   <% } %>
-  <% if (t === 'ret' && pk.state === 'draft') { %>
+  <% if (can && t === 'ret' && pk.state === 'draft') { %>
     <form method="post" action="/inventory/pickings/<%= pk.id %>/validate" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="validate">Validate Return</button></form>
   <% } %>
-  <% if (pk.state !== 'qc') { %>
+  <% if (canAction('inventory.operate', 'cancel') && pk.state !== 'qc') { %>
   <form method="post" action="/inventory/pickings/<%= pk.id %>/cancel" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-danger" data-confirm="Batalkan dokumen ini dan lepas reservasi?">Cancel</button></form>
   <% } %>
 </div>

@@ -34,7 +34,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'Purchase',
-      cp: { crumbs: [{ label: 'Purchase' }, { label: 'RFQ & Purchase Orders' }], list, views: ['list', 'kanban'], actions: can(req.user.role, 'purchase.edit') ? '<a class="btn btn-primary" href="/purchase/orders/new">New RFQ</a>' : '' },
+      cp: { crumbs: [{ label: 'Purchase' }, { label: 'RFQ & Purchase Orders' }], list, views: ['list', 'kanban'], actions: can(req.user, 'purchase.edit', 'create') ? '<a class="btn btn-primary" href="/purchase/orders/new">New RFQ</a>' : '' },
       columns: [
         { label: 'Reference', value: (r) => r.number },
         { label: 'Order Date', value: (r) => r.order_date },
@@ -52,7 +52,7 @@ module.exports = (app) => {
 
   const vendors = () => db.query('SELECT id, code, name, payment_term_code FROM partners WHERE is_vendor = 1 ORDER BY code');
 
-  app.get('/purchase/orders/new', ui.need('purchase.edit'), async (req, res) => {
+  app.get('/purchase/orders/new', ui.need('purchase.edit', 'create'), async (req, res) => {
     res.locals.setApp('purchase');
     // Prefill dari saran pembelian F-23: ?vendor=ID&p=ID:qty&p=ID:qty
     const pre = [].concat(req.query.p || []).map((x) => String(x).split(':')).filter(([id, qty]) => Number(id) && Number(qty) > 0)
@@ -75,7 +75,7 @@ module.exports = (app) => {
     const links = Object.entries(byVendor).map(([vid, v]) => `<a class="btn btn-sm" href="/purchase/orders/new?vendor=${vid}&${v.items.join('&')}">Buat RFQ ${v.code}</a>`).join(' ');
     res.render('pages/list_page', {
       title: 'Reorder Suggestions',
-      cp: { crumbs: [{ label: 'Purchase', href: '/purchase/orders' }, { label: 'Saran Pembelian (F-23, optional)' }], list, actions: can(req.user.role, 'purchase.edit') ? links : '' },
+      cp: { crumbs: [{ label: 'Purchase', href: '/purchase/orders' }, { label: 'Saran Pembelian (F-23, optional)' }], list, actions: can(req.user, 'purchase.edit', 'create') ? links : '' },
       intro: `Rerata harian = unit terkirim 7 hari terakhir (neto retur) ÷ 7. Saran = rerata × <b>${cover} hari cakupan</b> − Available − barang dalam perjalanan. Ubah cakupan: <a href="?cover=3">3</a> · <a href="?cover=7">7</a> · <a href="?cover=14">14</a> hari. Fitur opsional; tidak menggantikan fitur Must.`,
       columns: [
         { label: 'SKU', value: (r) => r.sku }, { label: 'Product', value: (r) => `${r.name} ${r.size}` },
@@ -88,7 +88,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/purchase/orders/new', ui.need('purchase.edit'), async (req, res) => {
+  app.post('/purchase/orders/new', ui.need('purchase.edit', 'create'), async (req, res) => {
     const id = await purchase.createRFQ(ui.ctx(req), { partnerId: Number(req.body.partner_id), lines: ui.parseLines(req.body), note: req.body.note, number: req.body.number });
     ui.flash(req, 'success', 'RFQ dibuat.');
     res.redirect(`/purchase/orders/${id}`);
@@ -107,7 +107,7 @@ module.exports = (app) => {
     });
   });
 
-  app.get('/purchase/orders/:id/edit', ui.need('purchase.edit'), async (req, res) => {
+  app.get('/purchase/orders/:id/edit', ui.need('purchase.edit', 'update'), async (req, res) => {
     res.locals.setApp('purchase');
     const o = await purchase.getOrder(Number(req.params.id));
     res.render('pages/po_edit', {
@@ -116,19 +116,19 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/purchase/orders/:id/edit', ui.need('purchase.edit'), async (req, res) => {
+  app.post('/purchase/orders/:id/edit', ui.need('purchase.edit', 'update'), async (req, res) => {
     await purchase.updateRFQ(ui.ctx(req), Number(req.params.id), { lines: ui.parseLines(req.body), note: req.body.note, number: req.body.number });
     ui.flash(req, 'success', 'RFQ disimpan.');
     res.redirect(`/purchase/orders/${req.params.id}`);
   });
 
-  app.post('/purchase/orders/:id/confirm', ui.need('purchase.edit'), async (req, res) => {
+  app.post('/purchase/orders/:id/confirm', ui.need('purchase.edit', 'update'), async (req, res) => {
     const r = await purchase.confirmPO(ui.ctx(req), Number(req.params.id));
     ui.flash(req, 'success', `Purchase Order dikonfirmasi; receipt ${r.receipt.number} dibuat. Stok dan AP belum berubah.`);
     res.redirect(`/purchase/orders/${req.params.id}`);
   });
 
-  app.post('/purchase/orders/:id/cancel', ui.need('purchase.edit'), async (req, res) => {
+  app.post('/purchase/orders/:id/cancel', ui.need('purchase.edit', 'cancel'), async (req, res) => {
     await purchase.cancelPO(ui.ctx(req), Number(req.params.id));
     ui.flash(req, 'success', 'Dibatalkan.');
     res.redirect(`/purchase/orders/${req.params.id}`);

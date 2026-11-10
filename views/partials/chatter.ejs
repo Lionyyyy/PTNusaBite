@@ -10,6 +10,7 @@
     <div class="grid">
       <div>
         <div class="section-title">Log Notes</div>
+        <% if (user && !['audit', 'master_admin'].includes(user.role) && !user.grants) { %>
         <form method="post" action="/notes" class="no-print" style="display:flex;gap:6px;margin-bottom:6px">
           <input type="hidden" name="_csrf" value="<%= csrf %>">
           <input type="hidden" name="doc_type" value="<%= chatter.docType %>">
@@ -17,6 +18,7 @@
           <input class="input" name="body" placeholder="Tulis log note…" maxlength="500" required>
           <button class="btn btn-sm">Log</button>
         </form>
+        <% } %>
         <% for (const m of chatter.messages) { %>
           <div class="msg"><span class="who"><%= m.author_name %></span><span class="when"><%= fmtDateTime(m.created_at) %></span>
             <% if (m.kind === 'note') { %><span class="badge badge-blue">note</span><% } %><div><%= m.body %></div></div>

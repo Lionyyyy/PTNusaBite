@@ -3,10 +3,10 @@
 <div class="cp"><div class="crumbs"><span class="muted small">①</span><a href="<%= listHref %>"><%= inv.type_label %>s</a><span class="sep">/</span><span><%= inv.number || 'Draft' %></span></div><div></div></div>
 <div class="formbar">
   <div class="left">
-    <% if (inv.state === 'draft' && canEdit) { %>
+    <% if (inv.state === 'draft' && canPost) { %>
       <form method="post" action="/invoicing/invoices/<%= inv.id %>/post" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="post">Confirm (Post)</button></form>
     <% } %>
-    <% if (inv.state === 'posted' && canEdit) { %>
+    <% if (inv.state === 'posted' && canPost) { %>
       <form method="post" action="/invoicing/invoices/<%= inv.id %>/post" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-sm" data-test="post-again" title="Uji SR-12: permintaan Post kedua akan ditolak">Post lagi (uji SR-12)</button></form>
     <% } %>
     <% if (inv.state === 'posted' && !isRefund && canPay && inv.amount_residual > 0) { %>

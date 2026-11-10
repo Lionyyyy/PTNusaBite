@@ -71,3 +71,26 @@ Sumber: [Render Blueprint YAML Reference](https://render.com/docs/blueprint-spec
 | `self signed certificate` / TLS error | CA tidak cocok | Tempel ulang CA certificate di `DB_SSL_CA` tanpa spasi tambahan. |
 | Login selalu kembali ke halaman login di lokal dengan `NODE_ENV=production` | Cookie `Secure` hanya dikirim lewat HTTPS | Di lokal jangan set `NODE_ENV=production`, atau akses lewat HTTPS. |
 | Halaman lambat dibuka pertama kali | Render free sedang tidur | Tunggu ±1 menit; buka URL sebelum demo. |
+### Master Admin dan Audit
+
+Untuk mengaktifkan kedua peran di deployment yang sudah ada, tambahkan
+`MASTER_ADMIN_INITIAL_PASSWORD` di **Render → service NusaBite → Environment**
+sebelum deploy cabang yang memuat fitur. Pakai kata sandi unik minimal 12 karakter
+dan maksimal 72 byte. Saat aplikasi mulai, migrasi menambah struktur hak akses
+pada database lama tanpa reset. Akun pertama dibuat dengan username
+`master.admin`. Setelah login berhasil, variabel kata sandi awal dapat dihapus.
+Mengubah variabel sesudah akun dibuat tidak mengganti kata sandi akun.
+
+1. Masuk sebagai `master.admin`, buka **Master Admin → User & Account Security**,
+   lalu buat akun dengan peran **Audit** dan kata sandi unik.
+2. Masuk dengan akun Audit dan buka **Audit → Audit Review** untuk melihat
+   transaksi, indikasi selisih, dan membuat laporan audit. Hitung fisik stok
+   disimpan sebagai pembanding di laporan.
+3. Gunakan **Role & Permission Management** untuk menetapkan akses peran khusus.
+   Persetujuan diskon di atas batas dan revisi pesanan tetap mengikuti aturan
+   Owner. Delete tersedia untuk master data yang boleh dihapus. Transaksi
+   menggunakan tindakan pembatalan sesuai aturan modul.
+
+Setelah Master Admin dibuat, reset baseline dari web dinonaktifkan untuk
+melindungi akun dan riwayat. Gunakan perintah reset yang sudah ada hanya pada
+database demo atau pengujian yang memang boleh dihapus.

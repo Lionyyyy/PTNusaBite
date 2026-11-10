@@ -48,8 +48,8 @@ async function createContact(ctx, data) {
   const d = normalize(data);
   return run(ctx, { action: 'CONTACT_CREATE', docType: 'res.partner', docNumber: d.code }, async (conn) => {
     if (!d.is_customer && !d.is_vendor) d.is_customer = 1;
-    if (d.is_customer) requirePerm(ctx, 'contacts.create_customer', d.code);
-    if (d.is_vendor) requirePerm(ctx, 'contacts.create_vendor', d.code);
+    if (d.is_customer) requirePerm(ctx, 'contacts.create_customer', d.code, 'create');
+    if (d.is_vendor) requirePerm(ctx, 'contacts.create_vendor', d.code, 'create');
     if (!/^[A-Z0-9-]{2,20}$/.test(d.code)) throw new BusinessError('ID kontak wajib 2–20 karakter huruf/angka (contoh C07).', { rule: 'SR-12', docNumber: d.code });
     if (!d.name) throw new BusinessError('Nama kontak wajib diisi.', { rule: 'SR-12', docNumber: d.code });
     const existing = await q1(conn, 'SELECT id, name FROM partners WHERE code = ?', [d.code]);
@@ -60,7 +60,7 @@ async function createContact(ctx, data) {
     }
     const term = await q1(conn, 'SELECT code FROM payment_terms WHERE code = ?', [d.payment_term_code]);
     if (!term) throw new BusinessError(`Payment terms ${d.payment_term_code} tidak dikenal.`, { rule: 'SR-09' });
-    if (!can(ctx.user.role, 'contacts.edit_credit') && (d.credit_limit !== 0 || d.payment_term_code !== 'COD')) {
+    if (!can(ctx.user, 'contacts.edit_credit', 'create') && (d.credit_limit !== 0 || d.payment_term_code !== 'COD')) {
       throw new AccessError('Credit limit dan payment terms hanya boleh diatur Finance/Owner (SR-13, SR-09).', { perm: 'contacts.edit_credit', docNumber: d.code });
     }
     if (d.credit_limit < 0) throw new BusinessError('Credit limit tidak boleh negatif.', { rule: 'SR-09' });
@@ -77,15 +77,15 @@ async function updateContact(ctx, id, data) {
   return run(ctx, { action: 'CONTACT_UPDATE', docType: 'res.partner', docId: id }, async (conn) => {
     const p = await q1(conn, 'SELECT * FROM partners WHERE id = ? FOR UPDATE', [id]);
     if (!p) throw new NotFoundError('Kontak tidak ditemukan');
-    if (p.is_customer) requirePerm(ctx, 'contacts.create_customer', p.code);
-    if (p.is_vendor) requirePerm(ctx, 'contacts.create_vendor', p.code);
+    if (p.is_customer) requirePerm(ctx, 'contacts.create_customer', p.code, 'update');
+    if (p.is_vendor) requirePerm(ctx, 'contacts.create_vendor', p.code, 'update');
     const d = normalize({ ...p, ...data, is_customer: p.is_customer, is_vendor: p.is_vendor });
     if (data.code !== undefined && d.code !== p.code) {
       throw new BusinessError(`ID kontak ${p.code} adalah identitas tetap dan tidak boleh diubah menjadi ${d.code} (SR-12).`, { rule: 'SR-12', docNumber: p.code });
     }
     if (!d.name) throw new BusinessError('Nama kontak wajib diisi.', { rule: 'SR-12', docNumber: p.code });
     const creditChanged = d.credit_limit !== Number(p.credit_limit) || d.payment_term_code !== p.payment_term_code;
-    if (creditChanged) requirePerm(ctx, 'contacts.edit_credit', p.code);
+    if (creditChanged) requirePerm(ctx, 'contacts.edit_credit', p.code, 'update');
     if (d.credit_limit < 0) throw new BusinessError('Credit limit tidak boleh negatif.', { rule: 'SR-09', docNumber: p.code });
     const changes = {};
     for (const f of ['name', 'partner_type', 'city', 'credit_limit', 'payment_term_code']) {

@@ -1,0 +1,84 @@
+<%- include('../partials/top', { title: 'Master Admin' }) %>
+<div class="content">
+  <h1>Master Admin</h1>
+  <section class="panel">
+    <div class="panel-h">System Monitoring · 24 jam terakhir</div>
+    <div class="panel-b">
+      <p><%= activity.events %> aktivitas · <%= activity.blocked || 0 %> ditolak · <%= activity.login_failures || 0 %> login gagal · <%= activity.server_errors || 0 %> kesalahan server</p>
+      <a href="/healthz">Status koneksi database</a> · <a href="/audit">Audit Log</a>
+    </div>
+  </section>
+  <section class="panel" id="users">
+    <div class="panel-h">User Management &amp; Account Security</div>
+    <div class="panel-b">
+      <% for (const account of [null, ...users]) { %>
+      <details <%= !account ? 'open' : '' %>>
+        <summary><%= account ? account.username + ' · ' + (roles.find((role) => role.code === account.role)?.label || account.role) + ' · ' + (account.active ? 'Aktif' : 'Nonaktif') : 'Buat akun' %></summary>
+        <% if (account?.role === 'owner') { %>
+          <p class="muted">Akun Owner dilindungi.</p>
+        <% } else { %>
+        <form method="post" action="/admin/users<%= account ? '/' + account.id : '' %>" class="grid">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (!account) { %><label>Username <input class="input" name="username" maxlength="40" required></label><% } %>
+          <label>Nama <input class="input" name="full_name" maxlength="120" value="<%= account?.full_name || '' %>" required></label>
+          <label>Peran <select class="input" name="role">
+            <% for (const role of roles.filter((role) => role.code !== 'owner' && (!account?.username.endsWith('.demo') || !['master_admin', 'audit'].includes(role.code)))) { %>
+              <option value="<%= role.code %>" <%= (account?.role || 'audit') === role.code ? 'selected' : '' %>><%= role.label %></option>
+            <% } %>
+          </select></label>
+          <label><%= account ? 'Atur kata sandi baru (opsional)' : 'Kata sandi awal' %>
+            <input class="input" type="password" name="password" autocomplete="new-password" minlength="12" maxlength="72" <%= account ? '' : 'required' %>>
+          </label>
+          <label>Status <select class="input" name="active"><option value="1">Aktif</option><option value="0" <%= account && !account.active ? 'selected' : '' %>>Nonaktif</option></select></label>
+          <% if (account) { %><label><input type="checkbox" name="revoke" value="1"> Cabut sesi login yang sedang aktif</label><% } %>
+          <div><button class="btn btn-primary"><%= account ? 'Simpan akun' : 'Buat akun' %></button></div>
+        </form>
+        <% } %>
+      </details>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel" id="roles">
+    <div class="panel-h">Role &amp; Permission Management</div>
+    <div class="panel-b">
+      <p>Peran bawaan dilindungi. Buat peran khusus untuk mengatur Create, Read, Update, Delete, Approve, dan pembatalan sesuai tindakan yang tersedia pada tiap modul.</p>
+      <p class="muted small">Pilih juga hak Read pada modul yang akan digunakan. Pembatalan transaksi menyimpan riwayat dokumen.</p>
+      <p class="muted">Peran bawaan · <%= roles.filter((role) => role.fixed).map((role) => role.label).join(', ') %></p>
+      <% for (const role of [null, ...roles.filter((role) => !role.fixed)]) { %>
+      <details>
+        <summary><%= role ? role.label + ' (' + role.code + ')' : 'Buat peran khusus' %></summary>
+        <form method="post" action="/admin/roles<%= role ? '/' + role.code : '' %>">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (!role) { %><label>Kode peran <input class="input" name="code" maxlength="20" required></label><% } %>
+          <label>Nama peran <input class="input" name="label" value="<%= role?.label || '' %>" maxlength="80" required></label>
+          <fieldset><legend>Hak akses</legend>
+            <% const actions = { create: 'Create', update: 'Update', delete: 'Delete', approve: 'Approve', cancel: 'Cancel' }; %>
+            <div class="grid">
+              <% for (const grant of grants) { const [feature, operation] = grant.split(':'); %>
+              <label><input type="checkbox" name="permissions" value="<%= grant %>" <%= role?.permissions.includes(grant) ? 'checked' : '' %>>
+                <%= actions[operation] || 'Read' %> · <%= feature %>
+              </label>
+              <% } %>
+            </div>
+          </fieldset>
+          <button class="btn btn-primary">Simpan peran</button>
+        </form>
+      </details>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel" id="configuration">
+    <div class="panel-h">System Configuration</div>
+    <div class="panel-b">
+      <form method="post" action="/admin/config" class="grid">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label>Nama perusahaan <input class="input" name="name" maxlength="120" value="<%= companyConfig.name %>" required></label>
+        <label>Nama singkat <input class="input" name="short_name" maxlength="40" value="<%= companyConfig.short_name %>" required></label>
+        <label>Kota <input class="input" name="city" maxlength="60" value="<%= companyConfig.city %>" required></label>
+        <p>Mata uang ERP · <%= companyConfig.currency %></p>
+        <div><button class="btn btn-primary">Simpan konfigurasi</button></div>
+      </form>
+    </div>
+  </section>
+</div>
+<%- include('../partials/bottom') %>

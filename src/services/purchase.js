@@ -76,7 +76,7 @@ async function writeLines(conn, orderId, lines) {
 
 async function createRFQ(ctx, data) {
   return run(ctx, { action: 'RFQ_CREATE', docType: 'purchase.order' }, async (conn) => {
-    requirePerm(ctx, 'purchase.edit');
+    requirePerm(ctx, 'purchase.edit', null, 'create');
     if (data.number) {
       // Nomor dokumen selalu dari sequence; nilai yang dikirim pengguna tidak dipakai (SR-12).
       const exists = await q1(conn, 'SELECT id FROM purchase_orders WHERE number = ?', [String(data.number).trim()]);
@@ -99,7 +99,7 @@ async function createRFQ(ctx, data) {
 
 async function updateRFQ(ctx, id, data) {
   return run(ctx, { action: 'RFQ_UPDATE', docType: 'purchase.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'purchase.edit');
+    requirePerm(ctx, 'purchase.edit', null, 'update');
     const o = await loadOrder(conn, id, true);
     if (data.number !== undefined && String(data.number).trim() !== o.number) {
       const other = await q1(conn, 'SELECT id FROM purchase_orders WHERE number = ? AND id <> ?', [String(data.number).trim(), id]);
@@ -119,7 +119,7 @@ async function updateRFQ(ctx, id, data) {
 
 async function confirmPO(ctx, id) {
   return run(ctx, { action: 'PO_CONFIRM', docType: 'purchase.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'purchase.edit');
+    requirePerm(ctx, 'purchase.edit', null, 'update');
     const o = await loadOrder(conn, id, true);
     if (o.state !== 'draft') throw new BusinessError(`${o.number} sudah ${STATE_LABEL[o.state]}; konfirmasi kedua ditolak (SR-12).`, { rule: 'SR-12', docNumber: o.number });
     const vendors = await locationByCode(conn, 'VENDORS');
@@ -138,7 +138,7 @@ async function confirmPO(ctx, id) {
 
 async function cancelPO(ctx, id) {
   return run(ctx, { action: 'PO_CANCEL', docType: 'purchase.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'purchase.edit');
+    requirePerm(ctx, 'purchase.edit', null, 'cancel');
     const o = await loadOrder(conn, id, true);
     if (o.state === 'cancel') throw new BusinessError(`${o.number} sudah dibatalkan.`, { rule: 'SR-12', docNumber: o.number });
     if (o.lines.some((l) => l.qty_received > 0 || l.qty_rejected > 0 || l.qty_billed > 0)) {

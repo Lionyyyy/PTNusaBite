@@ -54,7 +54,7 @@ async function validate(conn, d) {
 async function createEmployee(ctx, data) {
   const d = normalize(data);
   return run(ctx, { action: 'EMPLOYEE_CREATE', docType: 'hr.employee', docNumber: d.code }, async (conn) => {
-    requirePerm(ctx, 'employees.edit', d.code);
+    requirePerm(ctx, 'employees.edit', d.code, 'create');
     if (!/^E\d{2,4}$/.test(d.code)) throw new BusinessError('Employee ID berformat E + angka (contoh E07).', { rule: 'SR-15', docNumber: d.code });
     const dup = await q1(conn, 'SELECT name FROM employees WHERE code = ?', [d.code]);
     if (dup) throw new BusinessError(`Employee ID ${d.code} sudah dipakai oleh ${dup.name}; identitas karyawan harus unik (SR-15).`, { rule: 'SR-15', docNumber: d.code });
@@ -76,7 +76,7 @@ async function updateEmployee(ctx, id, data) {
   return run(ctx, { action: 'EMPLOYEE_UPDATE', docType: 'hr.employee', docId: id, detail: { attempted: data } }, async (conn) => {
     const e = await q1(conn, 'SELECT * FROM employees WHERE id = ? FOR UPDATE', [id]);
     if (!e) throw new NotFoundError('Karyawan tidak ditemukan');
-    requirePerm(ctx, 'employees.edit', e.code);
+    requirePerm(ctx, 'employees.edit', e.code, 'update');
     const d = normalize({ ...e, ...data, code: e.code });
     if (data.code !== undefined && String(data.code).trim().toUpperCase() !== e.code) {
       throw new BusinessError(`Employee ID ${e.code} tidak boleh diubah agar identitas tidak tertukar antar-outlet (SR-15).`, { rule: 'SR-15', docNumber: e.code });

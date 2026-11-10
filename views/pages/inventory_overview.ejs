@@ -1,5 +1,5 @@
 <%- include('../partials/top', { title }) %>
-<div class="cp"><div class="crumbs"><span class="muted small">①</span><span>Inventory Overview</span></div><div class="actions"><% if (perms['inventory.operate']) { %><a class="btn btn-primary" href="/inventory/transfers/new">New Internal Transfer</a><% } %></div></div>
+<div class="cp"><div class="crumbs"><span class="muted small">①</span><span>Inventory Overview</span></div><div class="actions"><% if (canAction('inventory.operate', 'create')) { %><a class="btn btn-primary" href="/inventory/transfers/new">New Internal Transfer</a><% } %></div></div>
 <div class="content">
   <div class="summary-cards" data-test="inventory-overview">
     <% for (const c of cards) { %>

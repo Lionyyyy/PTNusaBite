@@ -1,0 +1,46 @@
+<%- include('../partials/top', { title: 'Master Data' }) %>
+<div class="content">
+  <h1>Master Data</h1>
+  <% const labels = { branch: 'Cabang / lokasi internal', department: 'Departemen', category: 'Kategori' }; %>
+  <% for (const [kind, label] of Object.entries(labels)) { %>
+    <section class="panel">
+      <div class="panel-h"><%= label %></div>
+      <div class="panel-b">
+        <% if (allowed.create) { %>
+          <form method="post" action="/admin/catalog/create" class="grid">
+            <input type="hidden" name="_csrf" value="<%= csrf %>">
+            <input type="hidden" name="kind" value="<%= kind %>">
+            <label>Kode <input class="input" name="code" maxlength="20" required></label>
+            <label>Nama <input class="input" name="name" maxlength="80" required></label>
+            <% if (kind === 'branch') { %><label>Kota <input class="input" name="city" maxlength="60" required></label><% } %>
+            <div><button class="btn btn-primary">Tambah</button></div>
+          </form>
+        <% } %>
+        <% for (const row of rows.filter((item) => item.kind === kind)) { %>
+          <details>
+            <summary><%= row.code %> · <%= row.name %><%= row.city ? ' · ' + row.city : '' %></summary>
+            <% if (allowed.update) { %>
+              <form method="post" action="/admin/catalog/update" class="grid">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="kind" value="<%= kind %>">
+                <input type="hidden" name="code" value="<%= row.code %>">
+                <label>Nama <input class="input" name="name" maxlength="80" value="<%= row.name %>" required></label>
+                <% if (kind === 'branch') { %><label>Kota <input class="input" name="city" maxlength="60" value="<%= row.city %>" required></label><% } %>
+                <div><button class="btn">Simpan</button></div>
+              </form>
+            <% } %>
+            <% if (allowed.delete && !['WH-PKU', 'OUTLET-SUD'].includes(row.code)) { %>
+              <form method="post" action="/admin/catalog/delete">
+                <input type="hidden" name="_csrf" value="<%= csrf %>">
+                <input type="hidden" name="kind" value="<%= kind %>">
+                <input type="hidden" name="code" value="<%= row.code %>">
+                <button class="btn btn-danger" data-confirm="Hapus data ini?">Hapus</button>
+              </form>
+            <% } %>
+          </details>
+        <% } %>
+      </div>
+    </section>
+  <% } %>
+</div>
+<%- include('../partials/bottom') %>

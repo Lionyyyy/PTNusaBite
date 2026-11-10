@@ -144,7 +144,7 @@ async function _createOrder(conn, ctx, data) {
 
 async function createOrder(ctx, data) {
   return run(ctx, { action: 'QUOTATION_CREATE', docType: 'sale.order' }, async (conn) => {
-    requirePerm(ctx, 'sales.edit');
+    requirePerm(ctx, 'sales.edit', null, 'create');
     return (await _createOrder(conn, ctx, data)).id;
   });
 }
@@ -152,7 +152,7 @@ async function createOrder(ctx, data) {
 /** SR-08: hanya Quotation (Draft) yang boleh diubah. Dokumen Confirmed terkunci. */
 async function updateOrder(ctx, id, data) {
   return run(ctx, { action: 'QUOTATION_UPDATE', docType: 'sale.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'sales.edit');
+    requirePerm(ctx, 'sales.edit', null, 'update');
     const o = await loadOrder(conn, id, true);
     if (o.state !== 'draft') {
       throw new BusinessError(`${o.number} berstatus ${STATE_LABEL[o.state]}: harga, pajak, SKU, kuantitas, dan diskon terkunci. Perubahan hanya lewat dokumen Revisi dengan persetujuan Owner (SR-08).`, {
@@ -243,7 +243,7 @@ async function _confirm(conn, ctx, orderId, { skipCredit = false } = {}) {
 
 async function confirmOrder(ctx, id) {
   return run(ctx, { action: 'SO_CONFIRM', docType: 'sale.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'sales.edit');
+    requirePerm(ctx, 'sales.edit', null, 'update');
     const r = await _confirm(conn, ctx, id);
     return { id, picking: r.picking };
   });
@@ -251,7 +251,7 @@ async function confirmOrder(ctx, id) {
 
 async function cancelOrder(ctx, id) {
   return run(ctx, { action: 'SO_CANCEL', docType: 'sale.order', docId: id }, async (conn) => {
-    requirePerm(ctx, 'sales.edit');
+    requirePerm(ctx, 'sales.edit', null, 'cancel');
     const o = await loadOrder(conn, id, true);
     if (o.state === 'cancel') throw new BusinessError(`${o.number} sudah dibatalkan.`, { rule: 'SR-12', docNumber: o.number });
     if (o.lines.some((l) => l.qty_delivered > 0 || l.qty_invoiced > 0)) {
@@ -276,7 +276,7 @@ async function cancelOrder(ctx, id) {
 /** SR-08: koreksi harga/diskon setelah Confirmed lewat dokumen revisi yang disetujui Owner. */
 async function requestRevision(ctx, orderId, data) {
   return run(ctx, { action: 'REVISION_REQUEST', docType: 'sale.order', docId: orderId }, async (conn) => {
-    requirePerm(ctx, 'sales.revision_request');
+    requirePerm(ctx, 'sales.revision_request', null, 'create');
     const o = await loadOrder(conn, orderId, true);
     if (o.state !== 'sale') throw new BusinessError('Revisi hanya untuk Sales Order Confirmed; Quotation dapat diedit langsung.', { rule: 'SR-08', docNumber: o.number });
     const line = o.lines.find((l) => l.id === Number(data.lineId));

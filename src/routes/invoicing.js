@@ -57,7 +57,7 @@ function invoiceList(moveType) {
 
 async function showInvoice(req, res) {
   const inv = await invoicing.getInvoice(Number(req.params.id));
-  if (inv.move_type === 'in_invoice' && !can(req.user.role, 'accounting.view')) throw new AccessError('Vendor Bill hanya untuk Finance/Owner (SR-13).');
+  if (inv.move_type === 'in_invoice' && !can(req.user, 'accounting.view')) throw new AccessError('Vendor Bill hanya untuk Finance/Owner (SR-13).');
   res.locals.setApp(inv.move_type === 'in_invoice' ? 'accounting' : 'invoicing');
   const related = [];
   if (inv.sale_order_id) related.push({ label: `Sales Order ${inv.so_number}`, href: `/sales/orders/${inv.sale_order_id}` });
@@ -69,8 +69,9 @@ async function showInvoice(req, res) {
   for (const c of inv.credit_notes) related.push({ label: `Credit Note ${c.number || 'Draft'}`, href: `/invoicing/invoices/${c.id}` });
   res.render('pages/invoice_form', {
     title: inv.number || `Draft ${inv.type_label}`, inv, payLabel: PAY_LABEL,
-    canEdit: can(req.user.role, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit'),
-    canPay: can(req.user.role, 'accounting.edit'),
+    canEdit: can(req.user, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit', 'update'),
+    canPost: can(req.user, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit', 'approve'),
+    canPay: can(req.user, 'accounting.edit', 'create'),
     chatter: await loadChatter('account.move', inv.id, { numbers: [inv.number, inv.entry_number, ...inv.payments.map((p) => p.number)].filter(Boolean), related }),
   });
 }

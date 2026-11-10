@@ -17,9 +17,9 @@
 <% } else { %>
 <div class="formbar">
   <div class="left">
-    <% if (perms['crm.edit'] && lead.state === 'new') { %>
+    <% if (canAction('crm.edit', 'create') && lead.state === 'new') { %>
     <form method="post" action="/crm/leads/<%= lead.id %>/convert" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="convert">Convert to Opportunity</button></form>
-    <% } else if (perms['crm.edit']) { %>
+    <% } else if (canAction('crm.edit', 'create')) { %>
     <form method="post" action="/crm/leads/<%= lead.id %>/convert" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn" data-test="convert" title="Lead sudah dikonversi; sistem akan menolak konversi ulang (SR-22)">Convert to Opportunity</button></form>
     <% } %>
   </div>

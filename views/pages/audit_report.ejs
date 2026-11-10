@@ -1,0 +1,20 @@
+<%- include('../partials/top', { title: report.title }) %>
+<div class="content">
+  <div class="no-print"><a href="/audit/review#reports">Kembali ke laporan audit</a></div>
+  <section class="panel">
+    <div class="panel-h">Laporan Audit #<%= report.id %></div>
+    <div class="panel-b">
+      <h1><%= report.title %></h1>
+      <p class="muted"><%= report.author %> · <%= fmtDateTime(report.created_at) %></p>
+      <p style="white-space:pre-wrap"><%= report.body %></p>
+      <% if (report.stock_snapshot) { const s = report.stock_snapshot; %>
+      <h2>Perbandingan stok fisik</h2>
+      <table class="list">
+        <thead><tr><th>SKU</th><th>Lokasi</th><th>Stok sistem</th><th>Stok fisik</th><th>Selisih</th></tr></thead>
+        <tbody><tr><td><%= s.sku %></td><td><%= s.location %></td><td><%= s.system_qty %></td><td><%= s.physical %></td><td><%= s.difference %></td></tr></tbody>
+      </table>
+      <% } %>
+    </div>
+  </section>
+</div>
+<%- include('../partials/bottom') %>

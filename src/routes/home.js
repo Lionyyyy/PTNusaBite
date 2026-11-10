@@ -5,6 +5,7 @@ const { can } = require('../lib/acl');
 const ui = require('../lib/ui');
 const audit = require('../lib/audit');
 const { resetBaseline } = require('../seed');
+const { ensureAccessSchema } = require('../access-schema');
 const { rp } = require('../lib/money');
 const { BusinessError } = require('../lib/errors');
 
@@ -22,31 +23,31 @@ module.exports = (app) => {
     const u = req.user;
     const summary = [];
     const one = async (sql) => (await db.one(sql)) || {};
-    if (can(u.role, 'sales.view')) {
+    if (can(u, 'sales.view')) {
       const s = await one("SELECT SUM(state = 'draft') AS q, SUM(state = 'sale') AS so FROM sale_orders");
       summary.push({ label: 'Sales', value: `${Number(s.q || 0)} Quotation · ${Number(s.so || 0)} SO`, hint: 'Quotation & Sales Orders', href: '/sales/orders' });
     }
-    if (can(u.role, 'crm.view')) {
+    if (can(u, 'crm.view')) {
       const c = await one("SELECT SUM(state = 'new') AS n, (SELECT COUNT(*) FROM crm_opportunities) AS o FROM crm_leads");
       summary.push({ label: 'CRM', value: `${Number(c.n || 0)} Lead · ${Number(c.o || 0)} Opp.`, hint: 'Pipeline katering', href: '/crm' });
     }
-    if (can(u.role, 'inventory.view')) {
+    if (can(u, 'inventory.view')) {
       const s = await one("SELECT SUM(on_hand) AS oh, SUM(reserved) AS r FROM stock_quants");
       summary.push({ label: 'Inventory', value: `${Number(s.oh || 0)} unit`, hint: `Reserved ${Number(s.r || 0)}`, href: '/inventory' });
     }
-    if (can(u.role, 'purchase.view')) {
+    if (can(u, 'purchase.view')) {
       const p = await one("SELECT SUM(state = 'draft') AS rfq, SUM(state = 'purchase') AS po FROM purchase_orders");
       summary.push({ label: 'Purchase', value: `${Number(p.rfq || 0)} RFQ · ${Number(p.po || 0)} PO`, hint: 'Pengadaan', href: '/purchase/orders' });
     }
-    if (can(u.role, 'accounting.view')) {
+    if (can(u, 'accounting.view')) {
       const a = await one("SELECT COALESCE(SUM(CASE WHEN l.account_code = '110' THEN l.debit - l.credit END), 0) AS ar, COALESCE(SUM(CASE WHEN l.account_code = '102' THEN l.debit - l.credit END), 0) AS bank FROM journal_lines l JOIN journal_entries e ON e.id = l.entry_id AND e.state = 'posted'");
       summary.push({ label: 'Accounting', value: rp(a.ar), hint: `AR terbuka · Bank ${rp(a.bank)}`, href: '/accounting' });
     }
-    if (can(u.role, 'employees.view')) {
+    if (can(u, 'employees.view')) {
       const e = await one("SELECT COUNT(*) AS n FROM employees WHERE status = 'active'");
       summary.push({ label: 'Employees', value: `${e.n} aktif`, hint: 'Data staf & payroll', href: '/employees' });
     }
-    if (can(u.role, 'counter.use')) {
+    if (can(u, 'counter.use')) {
       summary.push({ label: 'Quick Counter', value: 'OUTLET-SUD', hint: 'Pesanan kasir tunai', href: '/counter' });
     }
     res.render('pages/home', { summary });
@@ -54,14 +55,18 @@ module.exports = (app) => {
 
   app.get('/settings', ui.need('admin.reset'), async (req, res) => {
     res.locals.setApp('settings');
-    const users = await db.query('SELECT username, full_name, role FROM users ORDER BY id');
-    const c = await db.one('SELECT baseline_at FROM company WHERE id = 1');
-    res.render('pages/settings', { users, rights: RIGHTS, baselineAt: c ? c.baseline_at : null });
+    const users = await db.query("SELECT username, full_name, role FROM users WHERE role IN ('sales','warehouse','finance','hr','cashier','owner') ORDER BY id");
+    const c = await db.one(`SELECT baseline_at, EXISTS(SELECT 1 FROM users WHERE role = 'master_admin') AS managed FROM company WHERE id = 1`);
+    res.render('pages/settings', { users, rights: RIGHTS, baselineAt: c?.baseline_at, allowReset: config.allowReset && !c?.managed });
   });
 
   app.post('/settings/reset', ui.need('admin.reset'), async (req, res) => {
     if (!config.allowReset) throw new BusinessError('Reset baseline dinonaktifkan pada deployment ini.', { rule: 'SR-13' });
+    if (await db.one("SELECT 1 FROM users WHERE role = 'master_admin' LIMIT 1")) {
+      throw new BusinessError('Reset baseline melalui web dinonaktifkan setelah Master Admin disiapkan.', { rule: 'SR-13' });
+    }
     await resetBaseline({ actor: { user: req.user } });
+    await ensureAccessSchema();
     // ID pengguna sama setelah reset (urutan seed tetap), sesi tetap valid.
     ui.flash(req, 'success', 'Baseline seed dipulihkan: 773 unit / Rp5.422.000, saldo pembuka Rp43.722.000.');
     res.redirect('/settings');
@@ -78,7 +83,7 @@ module.exports = (app) => {
     const docType = String(req.body.doc_type || '');
     const docId = Number(req.body.doc_id);
     const perm = NOTE_PERMS[docType];
-    if (!perm || !can(req.user.role, perm)) {
+    if (!perm || ['audit', 'master_admin'].includes(req.user.role) || req.user.grants || !can(req.user, perm)) {
       ui.flash(req, 'error', 'Anda tidak berhak menulis log note pada dokumen ini.', 'SR-13');
       return res.redirect(ui.back(req));
     }

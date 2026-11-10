@@ -136,7 +136,7 @@ function parseManualLines(raw) {
 /** Jurnal manual (Finance): dibuat Draft lalu diposting; harus seimbang. */
 async function createManualEntry(ctx, { date, ref, lines }) {
   return run(ctx, { action: 'JOURNAL_MANUAL_CREATE', docType: 'account.entry' }, async (conn) => {
-    requirePerm(ctx, 'accounting.edit');
+    requirePerm(ctx, 'accounting.edit', null, 'create');
     const clean = parseManualLines(lines);
     if (clean.length < 2) throw new BusinessError('Jurnal manual minimal dua baris.', { rule: 'SR-12' });
     for (const l of clean) {
@@ -160,7 +160,7 @@ async function createManualEntry(ctx, { date, ref, lines }) {
 
 async function postManualEntry(ctx, id) {
   return run(ctx, { action: 'JOURNAL_MANUAL_POST', docType: 'account.entry', docId: id }, async (conn) => {
-    requirePerm(ctx, 'accounting.edit');
+    requirePerm(ctx, 'accounting.edit', null, 'approve');
     const e = await q1(conn, 'SELECT * FROM journal_entries WHERE id = ? FOR UPDATE', [id]);
     if (!e) throw new NotFoundError('Journal Entry tidak ditemukan');
     if (e.state !== 'draft') {

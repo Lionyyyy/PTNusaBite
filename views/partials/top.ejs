@@ -15,7 +15,7 @@
   <details class="userbox">
     <summary><span class="avatar"><%= user.username.slice(0, 2).toUpperCase() %></span><span><%= user.username %> / <%= company %></span> ▾</summary>
     <div class="dropdown">
-      <div><b><%= user.name %></b><br><span class="muted small">Peran: <%= roleLabel %> · PT NusaBite Cepat Saji</span></div>
+      <div><b><%= user.name %></b><br><span class="muted small">Peran: <%= roleLabel %> · <%= companyName %></span></div>
       <a href="/">Apps</a>
       <form method="post" action="/logout" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Log out</button></form>
     </div>

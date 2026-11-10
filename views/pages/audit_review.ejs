@@ -1,0 +1,59 @@
+<%- include('../partials/top', { title: 'Audit Review' }) %>
+<div class="content">
+  <h1>Audit Review</h1>
+  <section class="panel">
+    <div class="panel-h">Pemeriksaan data ERP</div>
+    <div class="panel-b">
+      <ul>
+        <li>Transaction Review · <a href="/sales/orders">Penjualan</a> · <a href="/purchase/orders">Pembelian</a> · <a href="/accounting/payments">Pembayaran dan pengeluaran</a></li>
+        <li>Stock Audit · <a href="/inventory/stock">Stok sistem</a> · <a href="/inventory/moves">Pergerakan stok</a> · <a href="#reports">Catat hitung fisik</a></li>
+        <li>Activity Monitoring · <a href="/audit">Audit Log</a> · <a href="/audit?f=changes">Change History</a></li>
+        <li>Financial Audit · <a href="/accounting/entries">Jurnal</a> · <a href="/accounting/bills">Tagihan vendor</a> · <a href="/accounting/trial-balance">Neraca saldo</a></li>
+        <li>Payroll Audit · <a href="/employees">Data karyawan dan hari hadir</a> · <a href="/payroll">Payslip dan jurnal gaji</a></li>
+      </ul>
+    </div>
+  </section>
+  <section class="panel" id="findings">
+    <div class="panel-h">Discrepancy Detection</div>
+    <div class="panel-b">
+      <p class="muted">Pemeriksaan otomatis mencakup saldo dan reservasi stok, total dan jurnal tagihan, keseimbangan jurnal, serta absensi, penggajian dan status jurnal payroll. Indikasi perlu ditelusuri sebelum disimpulkan sebagai temuan.</p>
+      <% if (!findings.length) { %><p>Tidak ada selisih pada pemeriksaan otomatis saat ini.</p><% } else { %>
+      <table class="list">
+        <thead><tr><th>Area</th><th>Referensi</th><th>Indikasi</th></tr></thead>
+        <tbody>
+          <% for (const finding of findings) { %><tr>
+            <td><%= finding.area %></td><td><a href="<%= finding.href %>"><%= finding.reference %></a></td><td><%= finding.reason %></td>
+          </tr><% } %>
+        </tbody>
+      </table>
+      <% } %>
+    </div>
+  </section>
+  <section class="panel" id="reports">
+    <div class="panel-h">Report Audit</div>
+    <div class="panel-b">
+      <form method="post" action="/audit/reports">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label>Judul <input class="input" name="title" maxlength="120" required></label>
+        <p><label>Temuan dan bukti<br><textarea class="input" name="body" rows="5" cols="60" maxlength="8000" required></textarea></label></p>
+        <fieldset><legend>Hitung fisik stok (opsional)</legend>
+          <p class="muted small">Isi ketiga kolom untuk menyimpan jumlah fisik, stok sistem saat pencatatan, dan selisihnya dalam laporan.</p>
+          <label>SKU <select class="input" name="sku"><option value="">Pilih SKU</option>
+            <% for (const p of products) { %><option value="<%= p.sku %>"><%= p.sku %> · <%= p.name %></option><% } %>
+          </select></label>
+          <label>Lokasi <select class="input" name="location"><option value="">Pilih lokasi</option>
+            <% for (const l of locations) { %><option value="<%= l.code %>"><%= l.code %> · <%= l.name %></option><% } %>
+          </select></label>
+          <label>Jumlah fisik <input class="input" type="number" name="physical" min="0" max="2147483647" step="1"></label>
+        </fieldset>
+        <button class="btn btn-primary">Simpan laporan</button>
+      </form>
+      <h3>Laporan tersimpan</h3>
+      <% if (!reports.length) { %><p class="muted">Belum ada laporan.</p><% } %>
+      <ul>
+        <% for (const report of reports) { %><li><a href="/audit/reports/<%= report.id %>"><%= report.title %></a> · <%= report.author %> · <%= fmtDateTime(report.created_at) %></li><% } %>
+      </ul>
+    </div>
+  </section>
+</div>
+<%- include('../partials/bottom') %>

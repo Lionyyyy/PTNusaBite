@@ -43,7 +43,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'Quotations & Sales Orders',
-      cp: { crumbs: [{ label: 'Sales' }, { label: 'Quotations & Orders' }], list, views: ['list', 'kanban'], actions: can(req.user.role, 'sales.edit') ? '<a class="btn btn-primary" href="/sales/orders/new">New</a>' : '' },
+      cp: { crumbs: [{ label: 'Sales' }, { label: 'Quotations & Orders' }], list, views: ['list', 'kanban'], actions: can(req.user, 'sales.edit', 'create') ? '<a class="btn btn-primary" href="/sales/orders/new">New</a>' : '' },
       columns: [
         { label: 'Number', value: (r) => r.number },
         { label: 'Order Date', value: (r) => r.order_date },
@@ -61,7 +61,7 @@ module.exports = (app) => {
     });
   });
 
-  app.get('/sales/orders/new', ui.need('sales.edit'), async (req, res) => {
+  app.get('/sales/orders/new', ui.need('sales.edit', 'create'), async (req, res) => {
     res.locals.setApp('sales');
     res.render('pages/so_edit', {
       title: 'New Quotation', order: null, customers: await customers(), products: await editorProducts(),
@@ -70,7 +70,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/sales/orders/new', ui.need('sales.edit'), async (req, res) => {
+  app.post('/sales/orders/new', ui.need('sales.edit', 'create'), async (req, res) => {
     const id = await sales.createOrder(ui.ctx(req), {
       partnerId: Number(req.body.partner_id), opportunityId: req.body.opportunity_id ? Number(req.body.opportunity_id) : null,
       locationCode: req.body.location_code, note: req.body.note, lines: ui.parseLines(req.body),
@@ -95,7 +95,7 @@ module.exports = (app) => {
     });
   });
 
-  app.get('/sales/orders/:id/edit', ui.need('sales.edit'), async (req, res) => {
+  app.get('/sales/orders/:id/edit', ui.need('sales.edit', 'update'), async (req, res) => {
     res.locals.setApp('sales');
     const o = await sales.getOrder(Number(req.params.id));
     res.render('pages/so_edit', {
@@ -106,13 +106,13 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/sales/orders/:id/edit', ui.need('sales.edit'), async (req, res) => {
+  app.post('/sales/orders/:id/edit', ui.need('sales.edit', 'update'), async (req, res) => {
     await sales.updateOrder(ui.ctx(req), Number(req.params.id), { lines: ui.parseLines(req.body), note: req.body.note });
     ui.flash(req, 'success', 'Quotation disimpan.');
     res.redirect(`/sales/orders/${req.params.id}`);
   });
 
-  app.post('/sales/orders/:id/confirm', ui.need('sales.edit'), async (req, res) => {
+  app.post('/sales/orders/:id/confirm', ui.need('sales.edit', 'update'), async (req, res) => {
     const r = await sales.confirmOrder(ui.ctx(req), Number(req.params.id));
     ui.flash(req, 'success', `Sales Order dikonfirmasi; ${r.picking.number} dibuat dan stok direservasi.`);
     res.redirect(`/sales/orders/${req.params.id}`);
@@ -124,7 +124,7 @@ module.exports = (app) => {
     res.redirect(`/sales/orders/${req.params.id}`);
   });
 
-  app.post('/sales/orders/:id/cancel', ui.need('sales.edit'), async (req, res) => {
+  app.post('/sales/orders/:id/cancel', ui.need('sales.edit', 'cancel'), async (req, res) => {
     await sales.cancelOrder(ui.ctx(req), Number(req.params.id));
     ui.flash(req, 'success', 'Pesanan dibatalkan.');
     res.redirect(`/sales/orders/${req.params.id}`);

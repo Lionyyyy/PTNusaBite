@@ -206,7 +206,7 @@ async function _validateDelivery(conn, ctx, pickingId, { done = null, backorder 
 
 async function validateDelivery(ctx, pickingId, opts = {}) {
   return run(ctx, { action: 'DELIVERY_VALIDATE', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     return _validateDelivery(conn, ctx, pickingId, opts);
   });
 }
@@ -214,7 +214,7 @@ async function validateDelivery(ctx, pickingId, opts = {}) {
 /** Batalkan dokumen yang belum Done (misal backorder); reservasi dilepas. */
 async function cancelPicking(ctx, pickingId) {
   return run(ctx, { action: 'PICKING_CANCEL', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'cancel');
     const pk = await loadPicking(conn, pickingId, true);
     if (pk.state === 'done' || pk.state === 'cancel') {
       throw new BusinessError(`${pk.number} berstatus ${pk.state} dan tidak dapat dibatalkan.`, { rule: 'SR-12', docNumber: pk.number });
@@ -240,7 +240,7 @@ async function cancelPicking(ctx, pickingId) {
 
 async function createTransfer(ctx, { srcCode, destCode, lines, note }) {
   return run(ctx, { action: 'TRANSFER_CREATE', docType: 'stock.picking' }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'create');
     const src = await locationByCode(conn, srcCode);
     const dest = await locationByCode(conn, destCode);
     if (src.usage_type !== 'internal' || dest.usage_type !== 'internal') throw new BusinessError('Internal Transfer hanya antar lokasi internal.', { rule: 'SR-11' });
@@ -264,7 +264,7 @@ async function createTransfer(ctx, { srcCode, destCode, lines, note }) {
 
 async function confirmTransfer(ctx, pickingId) {
   return run(ctx, { action: 'TRANSFER_CONFIRM', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     const pk = await loadPicking(conn, pickingId, true);
     if (pk.picking_type !== 'int') throw new BusinessError('Bukan Internal Transfer.', { rule: 'SR-11' });
     if (pk.state !== 'draft') throw new BusinessError(`${pk.number} sudah ${pk.state}.`, { rule: 'SR-12', docNumber: pk.number });
@@ -281,7 +281,7 @@ async function confirmTransfer(ctx, pickingId) {
 
 async function validateTransfer(ctx, pickingId) {
   return run(ctx, { action: 'TRANSFER_VALIDATE', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     const pk = await loadPicking(conn, pickingId, true);
     if (pk.picking_type !== 'int') throw new BusinessError('Bukan Internal Transfer.', { rule: 'SR-11' });
     if (pk.state === 'done') throw new BusinessError(`${pk.number} sudah Done; validasi kedua ditolak (SR-12).`, { rule: 'SR-12', docNumber: pk.number });
@@ -308,7 +308,7 @@ async function validateTransfer(ctx, pickingId) {
 
 async function saveQualityCheck(ctx, pickingId, input) {
   return run(ctx, { action: 'RECEIPT_QC', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     const pk = await loadPicking(conn, pickingId, true);
     if (pk.picking_type !== 'in') throw new BusinessError('Bukan Receipt.', { rule: 'SR-19' });
     if (pk.state === 'done') {
@@ -345,7 +345,7 @@ async function saveQualityCheck(ctx, pickingId, input) {
 
 async function validateReceipt(ctx, pickingId) {
   return run(ctx, { action: 'RECEIPT_VALIDATE', docType: 'stock.picking', docId: pickingId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     const pk = await loadPicking(conn, pickingId, true);
     if (pk.picking_type !== 'in') throw new BusinessError('Bukan Receipt.', { rule: 'SR-19' });
     if (pk.state === 'done') throw new BusinessError(`${pk.number} sudah Done; validasi kedua ditolak (SR-12).`, { rule: 'SR-12', docNumber: pk.number });
@@ -416,7 +416,7 @@ async function validateReceipt(ctx, pickingId) {
 
 async function createReturn(ctx, deliveryId, input) {
   return run(ctx, { action: 'RETURN_CREATE', docType: 'stock.picking', docId: deliveryId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'create');
     const pk = await loadPicking(conn, deliveryId, true);
     if (pk.picking_type !== 'out' || pk.state !== 'done') {
       throw new BusinessError('Retur hanya dapat dibuat dari Delivery Order yang sudah Done (SR-10).', { rule: 'SR-10', docNumber: pk.number });
@@ -460,7 +460,7 @@ async function createReturn(ctx, deliveryId, input) {
  */
 async function validateReturn(ctx, returnId) {
   return run(ctx, { action: 'RETURN_VALIDATE', docType: 'stock.picking', docId: returnId }, async (conn) => {
-    requirePerm(ctx, 'inventory.operate');
+    requirePerm(ctx, 'inventory.operate', null, 'update');
     const ret = await loadPicking(conn, returnId, true);
     if (ret.picking_type !== 'ret') throw new BusinessError('Bukan dokumen retur.', { rule: 'SR-10' });
     if (ret.state === 'done') throw new BusinessError(`${ret.number} sudah Done; validasi kedua ditolak (SR-12).`, { rule: 'SR-12', docNumber: ret.number });

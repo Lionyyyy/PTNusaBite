@@ -33,7 +33,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'Products',
-      cp: { crumbs: [{ label: 'Products (Variant SKU)' }], list, views: ['list', 'kanban'], actions: can(req.user.role, 'products.edit') ? '<a class="btn btn-primary" href="/products/new">New</a>' : '' },
+      cp: { crumbs: [{ label: 'Products (Variant SKU)' }], list, views: ['list', 'kanban'], actions: can(req.user, 'products.edit', 'create') ? '<a class="btn btn-primary" href="/products/new">New</a>' : '' },
       columns: [
         { label: 'SKU', value: (r) => r.sku },
         { label: 'Name', value: (r) => r.name },
@@ -54,17 +54,17 @@ module.exports = (app) => {
 
   const vendors = () => db.query('SELECT id, code, name FROM partners WHERE is_vendor = 1 ORDER BY code');
 
-  app.get('/products/new', ui.need('products.edit'), async (req, res) => {
+  app.get('/products/new', ui.need('products.edit', 'create'), async (req, res) => {
     res.locals.setApp('inventory');
     res.render('pages/product_form', {
       title: 'New Product', isNew: true, p: { sku: '', name: '', size: '', color: '', uom: 'porsi', sales_price: 0, standard_cost: 0, quants: [], pricelist: [], moves: [] },
-      vendors: await vendors(), canEdit: true, canPrice: can(req.user.role, 'products.edit_price'), chatter: null,
+      vendors: await vendors(), canEdit: true, canPrice: can(req.user, 'products.edit_price', 'create'), chatter: null,
     });
   });
 
-  app.post('/products/new', ui.need('products.edit'), async (req, res) => {
+  app.post('/products/new', ui.need('products.edit', 'create'), async (req, res) => {
     const d = formData(req.body);
-    if (!can(req.user.role, 'products.edit_price')) { if (!Number(d.sales_price)) delete d.sales_price; if (!Number(d.standard_cost)) delete d.standard_cost; }
+    if (!can(req.user, 'products.edit_price', 'create')) { if (!Number(d.sales_price)) delete d.sales_price; if (!Number(d.standard_cost)) delete d.standard_cost; }
     const id = await products.createProduct(ui.ctx(req), d);
     ui.flash(req, 'success', 'Variant SKU dibuat.');
     res.redirect(`/products/${id}`);
@@ -75,12 +75,12 @@ module.exports = (app) => {
     const p = await products.getProduct(Number(req.params.id));
     res.render('pages/product_form', {
       title: p.sku, isNew: false, p, vendors: await vendors(),
-      canEdit: can(req.user.role, 'products.edit'), canPrice: can(req.user.role, 'products.edit_price'),
+      canEdit: can(req.user, 'products.edit', 'update'), canPrice: can(req.user, 'products.edit_price', 'update'),
       chatter: await loadChatter('product', p.id, { numbers: [p.sku], related: [{ label: `Moves (${p.moves.length})`, href: `/inventory/moves?q=${p.sku}` }] }),
     });
   });
 
-  app.post('/products/:id', ui.need('products.edit'), async (req, res) => {
+  app.post('/products/:id', ui.need('products.edit', 'update'), async (req, res) => {
     const d = formData(req.body);
     if (req.body.sales_price === undefined) delete d.sales_price;
     if (req.body.standard_cost === undefined) delete d.standard_cost;

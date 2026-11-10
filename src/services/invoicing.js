@@ -125,7 +125,7 @@ async function _createFromSale(conn, ctx, soId) {
 
 async function createInvoiceFromSale(ctx, soId) {
   return run(ctx, { action: 'INVOICE_CREATE', docType: 'sale.order', docId: soId }, async (conn) => {
-    requirePerm(ctx, 'invoicing.edit');
+    requirePerm(ctx, 'invoicing.edit', null, 'create');
     return _createFromSale(conn, ctx, soId);
   });
 }
@@ -134,7 +134,7 @@ async function createInvoiceFromSale(ctx, soId) {
 async function updateDraftQuantities(ctx, invoiceId, qtys) {
   return run(ctx, { action: 'INVOICE_UPDATE', docType: 'account.move', docId: invoiceId }, async (conn) => {
     const inv = await loadInvoice(conn, invoiceId, true);
-    requirePerm(ctx, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit');
+    requirePerm(ctx, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit', null, 'update');
     if (inv.state !== 'draft') throw new BusinessError(`${inv.number} sudah Posted; baris terkunci (SR-08).`, { rule: 'SR-08', docNumber: inv.number });
     if (inv.move_type === 'out_refund') throw new BusinessError('Kuantitas Credit Note mengikuti dokumen retur yang tervalidasi (SR-10).', { rule: 'SR-10' });
     const changes = [];
@@ -270,7 +270,7 @@ async function postInvoice(ctx, invoiceId) {
   return run(ctx, { action: 'INVOICE_POST', docType: 'account.move', docId: invoiceId }, async (conn) => {
     const inv = await q1(conn, 'SELECT move_type, number FROM invoices WHERE id = ?', [invoiceId]);
     if (!inv) throw new NotFoundError('Dokumen tidak ditemukan');
-    requirePerm(ctx, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit', inv.number);
+    requirePerm(ctx, inv.move_type === 'in_invoice' ? 'accounting.edit' : 'invoicing.edit', inv.number, 'approve');
     return _postInvoice(conn, ctx, invoiceId);
   });
 }
@@ -288,7 +288,7 @@ async function refreshPaymentState(conn, invoiceId) {
 
 async function createBillFromPO(ctx, poId) {
   return run(ctx, { action: 'BILL_CREATE', docType: 'purchase.order', docId: poId }, async (conn) => {
-    requirePerm(ctx, 'accounting.edit');
+    requirePerm(ctx, 'accounting.edit', null, 'create');
     const po = await q1(conn, 'SELECT * FROM purchase_orders WHERE id = ? FOR UPDATE', [poId]);
     if (!po) throw new NotFoundError('Purchase Order tidak ditemukan');
     if (po.state !== 'purchase') throw new BusinessError(`${po.number} belum dikonfirmasi.`, { rule: 'SR-06', docNumber: po.number });
@@ -389,7 +389,7 @@ async function _registerPayment(conn, ctx, invoiceId, { amount, method = 'bank',
 
 async function registerPayment(ctx, invoiceId, data) {
   return run(ctx, { action: 'PAYMENT_POST', docType: 'account.move', docId: invoiceId }, async (conn) => {
-    requirePerm(ctx, 'accounting.edit');
+    requirePerm(ctx, 'accounting.edit', null, 'create');
     return _registerPayment(conn, ctx, invoiceId, data);
   });
 }

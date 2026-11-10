@@ -49,7 +49,7 @@ async function getPayslip(id) {
 /** Buat payslip Draft untuk satu atau semua karyawan Active. Satu payslip per karyawan per periode (SR-12). */
 async function generatePayslips(ctx, { period, employeeIds = null }) {
   return run(ctx, { action: 'PAYSLIP_GENERATE', docType: 'hr.payslip', detail: { period } }, async (conn) => {
-    requirePerm(ctx, 'payroll.prepare');
+    requirePerm(ctx, 'payroll.prepare', null, 'create');
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(period || ''))) throw new BusinessError('Periode berformat YYYY-MM (contoh 2026-10).', { rule: 'SR-17' });
     const single = Array.isArray(employeeIds) && employeeIds.length === 1;
     let employees;
@@ -91,7 +91,7 @@ async function generatePayslips(ctx, { period, employeeIds = null }) {
 
 async function updateAttendance(ctx, id, attendedDays) {
   return run(ctx, { action: 'PAYSLIP_UPDATE', docType: 'hr.payslip', docId: id }, async (conn) => {
-    requirePerm(ctx, 'payroll.prepare');
+    requirePerm(ctx, 'payroll.prepare', null, 'update');
     const ps = await q1(conn, 'SELECT * FROM payslips WHERE id = ? FOR UPDATE', [id]);
     if (!ps) throw new NotFoundError('Payslip tidak ditemukan');
     if (ps.state !== 'draft') throw new BusinessError(`${ps.number} sudah ${STATE_LABEL[ps.state]}; hari hadir terkunci.`, { rule: 'SR-12', docNumber: ps.number });
@@ -107,7 +107,7 @@ async function updateAttendance(ctx, id, attendedDays) {
 
 async function transition(ctx, id, { action, perm, from, to, label }, extra) {
   return run(ctx, { action, docType: 'hr.payslip', docId: id }, async (conn) => {
-    requirePerm(ctx, perm);
+    requirePerm(ctx, perm, null, 'approve');
     const ps = await q1(conn, 'SELECT ps.*, e.code AS employee_code, e.name AS employee_name FROM payslips ps JOIN employees e ON e.id = ps.employee_id WHERE ps.id = ? FOR UPDATE', [id]);
     if (!ps) throw new NotFoundError('Payslip tidak ditemukan');
     if (ps.state !== from) {

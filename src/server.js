@@ -2,6 +2,7 @@
 const config = require('./config');
 const { createApp } = require('./app');
 const db = require('./db');
+const { ensureAccessSchema } = require('./access-schema');
 const { resetBaseline } = require('./seed');
 
 async function ensureDatabase() {
@@ -28,6 +29,7 @@ async function connectWithRetry() {
     readiness.attempt += 1;
     try {
       await ensureDatabase();
+      await ensureAccessSchema();
       readiness.ready = true;
       console.log(`Database siap (percobaan ${readiness.attempt}).`);
       return;

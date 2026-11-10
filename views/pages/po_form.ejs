@@ -2,14 +2,14 @@
 <div class="cp"><div class="crumbs"><span class="muted small">①</span><a href="/purchase/orders">RFQ &amp; Purchase Orders</a><span class="sep">/</span><span><%= o.number %></span></div><div></div></div>
 <div class="formbar">
   <div class="left">
-    <% if (o.state === 'draft' && perms['purchase.edit']) { %>
+    <% if (o.state === 'draft' && canAction('purchase.edit', 'update')) { %>
       <form method="post" action="/purchase/orders/<%= o.id %>/confirm" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="confirm-po">Confirm Order</button></form>
       <a class="btn" href="/purchase/orders/<%= o.id %>/edit" data-test="edit-rfq">Edit</a>
     <% } %>
-    <% if (o.state === 'purchase' && perms['accounting.edit']) { %>
+    <% if (o.state === 'purchase' && canAction('accounting.edit', 'create')) { %>
       <form method="post" action="/accounting/bills/from-po/<%= o.id %>" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn <%= o.lines.some((l) => l.qty_received > l.qty_billed) ? 'btn-primary' : '' %>" data-test="create-bill">Create Bill</button></form>
     <% } %>
-    <% if (o.state !== 'cancel' && perms['purchase.edit']) { %>
+    <% if (o.state !== 'cancel' && canAction('purchase.edit', 'cancel')) { %>
       <form method="post" action="/purchase/orders/<%= o.id %>/cancel" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-danger" data-confirm="Batalkan PO?">Cancel</button></form>
     <% } %>
   </div>

@@ -2,8 +2,8 @@
 <div class="cp"><div class="crumbs"><span class="muted small">①</span><a href="/crm">CRM pipeline</a><span class="sep">/</span><span><%= o.number %></span></div><div></div></div>
 <div class="formbar">
   <div class="left">
-    <% if (perms['sales.edit'] && o.partner_id) { %><a class="btn btn-primary" href="/sales/orders/new?opportunity_id=<%= o.id %>&partner_id=<%= o.partner_id %>">New Quotation</a><% } %>
-    <% if (perms['crm.edit']) { for (const [k, label] of stages) { if (k === o.stage) continue; %>
+    <% if (canAction('sales.edit', 'create') && o.partner_id) { %><a class="btn btn-primary" href="/sales/orders/new?opportunity_id=<%= o.id %>&partner_id=<%= o.partner_id %>">New Quotation</a><% } %>
+    <% if (canAction('crm.edit', 'update')) { for (const [k, label] of stages) { if (k === o.stage) continue; %>
       <form method="post" action="/crm/opportunities/<%= o.id %>/stage" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="stage" value="<%= k %>"><button class="btn btn-sm">→ <%= label %></button></form>
     <% } } %>
   </div>

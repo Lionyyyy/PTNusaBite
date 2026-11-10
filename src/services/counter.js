@@ -18,7 +18,7 @@ const invoicing = require('./invoicing');
  */
 async function checkout(ctx, { lines, method = 'cash', cashReceived }) {
   return run(ctx, { action: 'COUNTER_CHECKOUT', docType: 'sale.order' }, async (conn) => {
-    requirePerm(ctx, 'counter.use');
+    requirePerm(ctx, 'counter.use', null, 'create');
     const walkin = await q1(conn, "SELECT id FROM partners WHERE code = 'WALKIN'");
     const clean = (lines || []).filter((l) => l.productId && toInt(l.qty, 0) > 0).map((l) => ({ productId: l.productId, qty: l.qty }));
     if (!clean.length) throw new BusinessError('Pilih minimal satu produk dengan kuantitas > 0.', { rule: 'SR-14' });
