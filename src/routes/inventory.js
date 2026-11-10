@@ -126,7 +126,7 @@ module.exports = (app) => {
     res.redirect(`/inventory/pickings/${req.params.id}`);
   });
 
-  app.get('/inventory/pickings/:id/return', ui.need('inventory.operate'), async (req, res) => {
+  app.get('/inventory/pickings/:id/return', ui.need('inventory.operate', 'create'), async (req, res) => {
     res.locals.setApp('inventory');
     const pk = await stock.getPicking(Number(req.params.id));
     res.render('pages/return_new', { title: `Return ${pk.number}`, pk });
@@ -138,7 +138,7 @@ module.exports = (app) => {
     res.redirect(`/inventory/pickings/${retId}`);
   });
 
-  app.get('/inventory/transfers/new', ui.need('inventory.operate'), async (req, res) => {
+  app.get('/inventory/transfers/new', ui.need('inventory.operate', 'create'), async (req, res) => {
     res.locals.setApp('inventory');
     const products = await db.query(`SELECT p.id, p.sku, p.name, p.size, p.uom, p.standard_cost AS price,
         SUM(CASE WHEN l.code = 'WH-PKU' THEN sq.on_hand - sq.reserved END) AS wh, SUM(CASE WHEN l.code = 'OUTLET-SUD' THEN sq.on_hand - sq.reserved END) AS outlet
@@ -146,7 +146,7 @@ module.exports = (app) => {
     res.render('pages/transfer_new', { title: 'New Internal Transfer', products: products.map((p) => ({ ...p, hint: `Avail WH ${p.wh} · Outlet ${p.outlet}` })) });
   });
 
-  app.post('/inventory/transfers/new', ui.need('inventory.operate'), async (req, res) => {
+  app.post('/inventory/transfers/new', ui.need('inventory.operate', 'create'), async (req, res) => {
     const id = await stock.createTransfer(ui.ctx(req), { srcCode: req.body.src, destCode: req.body.dest, lines: ui.parseLines(req.body, { productId: 'product_id', qty: 'qty' }), note: req.body.note });
     if (req.body.then === 'todo') {
       await stock.confirmTransfer(ui.ctx(req), id);

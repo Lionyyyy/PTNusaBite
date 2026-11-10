@@ -9,7 +9,7 @@ const { can } = require('./acl');
 const APPS = [
   {
     key: 'sales', name: 'Sales', icon: 'S', color: '#e07a5f', perms: ['sales.view', 'counter.use'],
-    home: (u) => (can(u.role, 'sales.view') ? '/sales/orders' : '/counter'),
+    home: (u) => (can(u, 'sales.view') ? '/sales/orders' : '/counter'),
     menu: {
       overview: [{ label: 'Quotations & Orders', href: '/sales/orders', perm: 'sales.view' }],
       documents: [
@@ -146,15 +146,31 @@ const APPS = [
     },
   },
   {
-    key: 'audit', name: 'Audit', icon: 'Q', color: '#6c757d', perms: ['audit.view'], home: () => '/audit',
+    key: 'audit', name: 'Audit', icon: 'Q', color: '#6c757d', perms: ['audit.view'], home: (u) => can(u, 'audit.review') ? '/audit/review' : '/audit',
     menu: {
-      overview: [{ label: 'Audit Log', href: '/audit', perm: 'audit.view' }],
+      overview: [{ label: 'Audit Review', href: '/audit/review', perm: 'audit.review' },
+        { label: 'Activity Monitoring', href: '/audit', perm: 'audit.view' },
+        { label: 'Change History', href: '/audit?f=changes', perm: 'audit.view' }],
       documents: [
         { label: 'Trace S00008', href: '/audit/trace?number=S00008', perm: 'audit.view' },
         { label: 'Denied / Rejected', href: '/audit?f=blocked', perm: 'audit.view' },
       ],
-      reporting: [],
+      reporting: [{ label: 'Discrepancy Detection', href: '/audit/review#findings', perm: 'audit.review' },
+        { label: 'Report Audit', href: '/audit/review#reports', perm: 'audit.review' }],
       configuration: [],
+    },
+  },
+  {
+    key: 'administration', name: 'Master Admin', icon: 'M', color: '#465578',
+    perms: ['admin.manage', 'masterdata.view'],
+    home: (u) => can(u, 'admin.manage') ? '/admin' : '/admin/catalog',
+    menu: {
+      overview: [{ label: 'System Monitoring', href: '/admin', perm: 'admin.manage' }],
+      documents: [{ label: 'User & Account Security', href: '/admin#users', perm: 'admin.manage' },
+        { label: 'Role & Permission Management', href: '/admin#roles', perm: 'admin.manage' }],
+      reporting: [{ label: 'Audit Log', href: '/audit', perm: 'audit.view' }],
+      configuration: [{ label: 'System Configuration', href: '/admin#configuration', perm: 'admin.manage' },
+        { label: 'Master Data', href: '/admin/catalog', perm: 'masterdata.view' }],
     },
   },
   {
@@ -169,7 +185,7 @@ const APPS = [
 ];
 
 function visibleApps(user) {
-  return APPS.filter((a) => a.perms.some((p) => can(user.role, p)));
+  return APPS.filter((a) => a.perms.some((p) => can(user, p)));
 }
 
 function appByKey(key) {
@@ -178,7 +194,7 @@ function appByKey(key) {
 
 function menuFor(app, user) {
   if (!app) return null;
-  const filter = (items) => items.filter((i) => can(user.role, i.perm));
+  const filter = (items) => items.filter((i) => can(user, i.perm));
   return {
     overview: filter(app.menu.overview),
     documents: filter(app.menu.documents),

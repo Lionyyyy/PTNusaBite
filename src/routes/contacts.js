@@ -35,8 +35,8 @@ module.exports = (app) => {
       views: ['list', 'kanban'],
     });
     const actions = [
-      can(req.user.role, 'contacts.create_customer') ? '<a class="btn btn-primary" href="/contacts/new?kind=customer">New Customer</a>' : '',
-      can(req.user.role, 'contacts.create_vendor') ? '<a class="btn" href="/contacts/new?kind=vendor">New Vendor</a>' : '',
+      can(req.user, 'contacts.create_customer', 'create') ? '<a class="btn btn-primary" href="/contacts/new?kind=customer">New Customer</a>' : '',
+      can(req.user, 'contacts.create_vendor', 'create') ? '<a class="btn" href="/contacts/new?kind=vendor">New Vendor</a>' : '',
     ].join(' ');
     res.render('pages/list_page', {
       title: 'Contacts',
@@ -61,8 +61,8 @@ module.exports = (app) => {
     const kind = req.query.kind === 'vendor' ? 'vendor' : 'customer';
     res.render('pages/contact_form', {
       title: 'New Contact', isNew: true, kind, c: { code: '', name: '', partner_type: 'company', city: 'Pekanbaru', credit_limit: 0, payment_term_code: 'COD' },
-      terms: await contacts.listTerms(), canCredit: can(req.user.role, 'contacts.edit_credit'),
-      canEdit: can(req.user.role, kind === 'vendor' ? 'contacts.create_vendor' : 'contacts.create_customer'), chatter: null,
+      terms: await contacts.listTerms(), canCredit: can(req.user, 'contacts.edit_credit', 'create'),
+      canEdit: can(req.user, kind === 'vendor' ? 'contacts.create_vendor' : 'contacts.create_customer', 'create'), chatter: null,
     });
   });
 
@@ -82,8 +82,8 @@ module.exports = (app) => {
     if (c.invoice_count) related.push({ label: `Invoices/Bills (${c.invoice_count})`, href: `/invoicing/invoices?q=${encodeURIComponent(c.code)}` });
     res.render('pages/contact_form', {
       title: `${c.code} ${c.name}`, isNew: false, kind, c, terms: await contacts.listTerms(),
-      canCredit: can(req.user.role, 'contacts.edit_credit'),
-      canEdit: can(req.user.role, kind === 'vendor' ? 'contacts.create_vendor' : 'contacts.create_customer'),
+      canCredit: can(req.user, 'contacts.edit_credit', 'update'),
+      canEdit: can(req.user, kind === 'vendor' ? 'contacts.create_vendor' : 'contacts.create_customer', 'update'),
       chatter: await loadChatter('res.partner', c.id, { numbers: [c.code], related }),
     });
   });

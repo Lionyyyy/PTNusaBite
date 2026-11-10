@@ -5,20 +5,20 @@
 </div></div>
 <div class="formbar">
   <div class="left">
-    <% if (o.state === 'draft' && perms['sales.edit']) { %>
+    <% if (o.state === 'draft' && canAction('sales.edit', 'update')) { %>
       <form method="post" action="/sales/orders/<%= o.id %>/confirm" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="confirm">Confirm</button></form>
       <a class="btn" href="/sales/orders/<%= o.id %>/edit">Edit</a>
     <% } %>
     <% if (o.state === 'draft' && o.discount_approval === 'pending' && perms['sales.approve_discount']) { %>
       <form method="post" action="/sales/orders/<%= o.id %>/approve-discount" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-accent" data-test="approve-discount">Approve Discount</button></form>
     <% } else if (o.state === 'draft' && o.discount_approval === 'pending') { %><span class="badge badge-orange">Menunggu persetujuan diskon Owner</span><% } %>
-    <% if (o.state === 'sale' && perms['invoicing.edit'] && o.lines.some((l) => l.toInvoice > 0)) { %>
+    <% if (o.state === 'sale' && canAction('invoicing.edit', 'create') && o.lines.some((l) => l.toInvoice > 0)) { %>
       <form method="post" action="/invoicing/from-sale/<%= o.id %>" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary" data-test="create-invoice">Create Invoice</button></form>
-    <% } else if (o.state === 'sale' && perms['invoicing.edit']) { %>
+    <% } else if (o.state === 'sale' && canAction('invoicing.edit', 'create')) { %>
       <form method="post" action="/invoicing/from-sale/<%= o.id %>" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn" data-test="create-invoice" title="Tidak ada kuantitas Done yang belum ditagih">Create Invoice</button></form>
     <% } %>
-    <% if (o.state === 'sale' && perms['sales.edit']) { %><a class="btn" href="/sales/orders/<%= o.id %>/edit" data-test="edit-locked">Edit 🔒</a><% } %>
-    <% if (o.state !== 'cancel' && perms['sales.edit']) { %>
+    <% if (o.state === 'sale' && canAction('sales.edit', 'update')) { %><a class="btn" href="/sales/orders/<%= o.id %>/edit" data-test="edit-locked">Edit 🔒</a><% } %>
+    <% if (o.state !== 'cancel' && canAction('sales.edit', 'cancel')) { %>
       <form method="post" action="/sales/orders/<%= o.id %>/cancel" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-danger" data-confirm="Batalkan pesanan ini?">Cancel</button></form>
     <% } %>
   </div>

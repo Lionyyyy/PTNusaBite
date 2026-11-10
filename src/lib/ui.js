@@ -23,9 +23,9 @@ function ctx(req) {
 }
 
 /** Middleware hak akses halaman; upaya tanpa hak dicatat sebagai "denied" di audit log (SR-13). */
-function need(perm) {
+function need(perm, operation) {
   return async (req, res, next) => {
-    if (req.user && can(req.user.role, perm)) return next();
+    if (req.user && can(req.user, perm, operation)) return next();
     await audit.logOutside(ctx(req), {
       action: 'ACCESS_DENIED', docType: 'page', result: 'denied',
       message: `${req.method} ${req.originalUrl} memerlukan hak "${perm}"`, detail: { perm, path: req.originalUrl },

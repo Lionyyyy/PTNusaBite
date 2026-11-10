@@ -71,12 +71,12 @@ async function assertUniqueVariant(conn, d, excludeId = 0) {
 async function createProduct(ctx, data) {
   const d = normalize(data);
   return run(ctx, { action: 'PRODUCT_CREATE', docType: 'product', docNumber: d.sku }, async (conn) => {
-    requirePerm(ctx, 'products.edit', d.sku);
+    requirePerm(ctx, 'products.edit', d.sku, 'create');
     for (const f of ['sku', 'name', 'size', 'color', 'uom']) {
       if (!d[f]) throw new BusinessError(`Field ${f} wajib diisi untuk Variant SKU (SR-21).`, { rule: 'SR-21', docNumber: d.sku });
     }
     if (!/^[A-Z0-9-]{2,30}$/.test(d.sku)) throw new BusinessError('Format SKU: huruf besar, angka, dan tanda minus.', { rule: 'SR-21', docNumber: d.sku });
-    if ((d.sales_price || d.standard_cost) && !can(ctx.user.role, 'products.edit_price')) {
+    if ((d.sales_price || d.standard_cost) && !can(ctx.user, 'products.edit_price', 'create')) {
       throw new AccessError('Harga jual dan standard cost hanya boleh diisi Finance/Owner (SR-13).', { perm: 'products.edit_price', docNumber: d.sku });
     }
     if (d.sales_price < 0 || d.standard_cost < 0) throw new BusinessError('Harga dan biaya tidak boleh negatif.', { rule: 'SR-13' });
@@ -97,7 +97,7 @@ async function createProduct(ctx, data) {
 
 async function updateProduct(ctx, id, data) {
   return run(ctx, { action: 'PRODUCT_UPDATE', docType: 'product', docId: id }, async (conn) => {
-    requirePerm(ctx, 'products.edit');
+    requirePerm(ctx, 'products.edit', null, 'update');
     const p = await q1(conn, 'SELECT * FROM products WHERE id = ? FOR UPDATE', [id]);
     if (!p) throw new NotFoundError('Produk tidak ditemukan');
     const d = normalize({ ...p, ...data });
@@ -105,7 +105,7 @@ async function updateProduct(ctx, id, data) {
       throw new BusinessError(`SKU ${p.sku} adalah identitas tetap dan tidak boleh diubah (SR-21).`, { rule: 'SR-21', docNumber: p.sku });
     }
     const priceChanged = d.sales_price !== p.sales_price || d.standard_cost !== p.standard_cost;
-    if (priceChanged) requirePerm(ctx, 'products.edit_price', p.sku);
+    if (priceChanged) requirePerm(ctx, 'products.edit_price', p.sku, 'update');
     if (d.standard_cost !== p.standard_cost) {
       const st = await q1(conn, 'SELECT COALESCE(SUM(on_hand), 0) AS qty FROM stock_quants WHERE product_id = ?', [id]);
       if (Number(st.qty) > 0) {

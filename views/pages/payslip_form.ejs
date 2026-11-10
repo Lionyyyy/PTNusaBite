@@ -3,10 +3,10 @@
 <div class="formbar">
   <div class="left">
     <% const act = (a, label, cls, test) => `<form method="post" action="/payroll/${ps.id}/${a}" class="inline"><input type="hidden" name="_csrf" value="${csrf}"><button class="btn ${cls}" data-test="${test}">${label}</button></form>`; %>
-    <% if (ps.state === 'draft' && perms['payroll.prepare']) { %><%- act('approve', 'Approve (HR)', 'btn-primary', 'approve') %><% } %>
-    <% if (ps.state === 'approved' && perms['payroll.post']) { %><%- act('post', 'Post to Accounting', 'btn-primary', 'post') %><% } %>
-    <% if (ps.state === 'posted' && perms['payroll.post']) { %><%- act('pay', 'Bank Payment', 'btn-primary', 'pay') %><% } %>
-    <% if (['posted', 'paid'].includes(ps.state) && perms['payroll.post']) { %><%- act('post', 'Post lagi (uji SR-12)', 'btn-sm', 'post-again') %><% } %>
+    <% if (ps.state === 'draft' && canAction('payroll.prepare', 'approve')) { %><%- act('approve', 'Approve (HR)', 'btn-primary', 'approve') %><% } %>
+    <% if (ps.state === 'approved' && canAction('payroll.post', 'approve')) { %><%- act('post', 'Post to Accounting', 'btn-primary', 'post') %><% } %>
+    <% if (ps.state === 'posted' && canAction('payroll.post', 'approve')) { %><%- act('pay', 'Bank Payment', 'btn-primary', 'pay') %><% } %>
+    <% if (['posted', 'paid'].includes(ps.state) && canAction('payroll.post', 'approve')) { %><%- act('post', 'Post lagi (uji SR-12)', 'btn-sm', 'post-again') %><% } %>
   </div>
   <%- include('../partials/statusbar', { stages: [['draft', 'Draft'], ['approved', 'Approved'], ['posted', 'Posted'], ['paid', 'Paid']], current: ps.state }) %>
 </div>
@@ -22,7 +22,7 @@
     <div class="field"><span class="lbl">Period</span><span><%= ps.period %></span></div>
     <div class="field"><span class="lbl">Planned Days</span><span><%= ps.planned_days %></span></div>
     <div class="field"><span class="lbl">Attended Days</span><span>
-      <% if (ps.state === 'draft' && perms['payroll.prepare']) { %><form method="post" action="/payroll/<%= ps.id %>/attendance" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><input class="input-sm" name="attended_days" value="<%= ps.attended_days %>"> <button class="btn btn-sm">Simpan</button></form>
+      <% if (ps.state === 'draft' && canAction('payroll.prepare', 'update')) { %><form method="post" action="/payroll/<%= ps.id %>/attendance" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><input class="input-sm" name="attended_days" value="<%= ps.attended_days %>"> <button class="btn btn-sm">Simpan</button></form>
       <% } else { %><%= ps.attended_days %><% } %></span></div>
   </div><div>
     <div class="muted small">③ Secondary fields</div>

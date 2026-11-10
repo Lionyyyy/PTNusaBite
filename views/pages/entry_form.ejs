@@ -2,7 +2,7 @@
 <div class="cp"><div class="crumbs"><span class="muted small">①</span><a href="/accounting/entries">Journal Entries</a><span class="sep">/</span><span><%= e.number || 'Draft' %></span></div><div></div></div>
 <div class="formbar">
   <div class="left">
-    <% if (e.state === 'draft' && perms['accounting.edit']) { %><form method="post" action="/accounting/entries/<%= e.id %>/post" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary">Post</button></form><% } %>
+    <% if (e.state === 'draft' && canAction('accounting.edit', 'approve')) { %><form method="post" action="/accounting/entries/<%= e.id %>/post" class="inline"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn btn-primary">Post</button></form><% } %>
   </div>
   <%- include('../partials/statusbar', { stages: [['draft', 'Draft'], ['posted', 'Posted']], current: e.state }) %>
 </div>

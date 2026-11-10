@@ -5,7 +5,7 @@ const express = require('express');
 const cookieSession = require('cookie-session');
 const config = require('./config');
 const db = require('./db');
-const { permsFor, ROLES } = require('./lib/acl');
+const { can, permsFor, ROLES } = require('./lib/acl');
 const { visibleApps, appByKey, menuFor } = require('./lib/apps');
 const { BusinessError, AccessError, NotFoundError, translateDbError } = require('./lib/errors');
 const audit = require('./lib/audit');
@@ -56,10 +56,14 @@ function createApp({ readiness = { ready: true, attempt: 0 } } = {}) {
   // Muat pengguna aktif dari database pada setiap request.
   app.use(async (req, res, next) => {
     res.locals.user = null;
+    let u;
     if (req.session.uid) {
-      const u = await db.one('SELECT id, username, full_name, role FROM users WHERE id = ? AND active = 1', [req.session.uid]);
-      if (u && u.username === req.session.username) {
-        req.user = { id: u.id, username: u.username, role: u.role, name: u.full_name };
+      u = await db.one(`SELECT u.id, u.username, u.full_name, u.role, u.session_version, r.label, r.permissions AS grants_json,
+        c.name AS company_name, c.short_name AS company_short_name
+        FROM users u LEFT JOIN access_roles r ON r.code = u.role JOIN company c ON c.id = 1
+        WHERE u.id = ? AND u.active = 1`, [req.session.uid]);
+      if (u && u.username === req.session.username && u.session_version === (req.session.version ?? 0)) {
+        req.user = { id: u.id, username: u.username, role: u.role, name: u.full_name, grants: typeof u.grants_json === 'string' ? JSON.parse(u.grants_json) : u.grants_json };
       } else {
         req.session.uid = null;
       }
@@ -68,8 +72,9 @@ function createApp({ readiness = { ready: true, attempt: 0 } } = {}) {
     req.session.flash = [];
     Object.assign(res.locals, {
       user: req.user || null,
-      perms: req.user ? permsFor(req.user.role) : {},
-      roleLabel: req.user ? ROLES[req.user.role] : '',
+      canAction: (permission, operation) => Boolean(req.user && can(req.user, permission, operation)),
+      perms: req.user ? permsFor(req.user) : {},
+      roleLabel: req.user ? (ROLES[req.user.role] || u.label || req.user.role) : '',
       apps: req.user ? visibleApps(req.user) : [],
       flash,
       path: req.path,
@@ -79,7 +84,8 @@ function createApp({ readiness = { ready: true, attempt: 0 } } = {}) {
       num: money.num,
       fmtDate: time.fmtDate,
       fmtDateTime: time.fmtDateTime,
-      company: 'NusaBite',
+      company: u?.company_short_name || 'NusaBite',
+      companyName: u?.company_name || 'PT NusaBite Cepat Saji',
       allowReset: config.allowReset,
     });
     res.locals.setApp = (key) => {
@@ -121,6 +127,7 @@ function createApp({ readiness = { ready: true, attempt: 0 } } = {}) {
   require('./routes/payroll')(app);
   require('./routes/dashboard')(app);
   require('./routes/audit')(app);
+  require('./routes/admin')(app);
 
   app.use((req, res) => {
     res.status(404).render('pages/error', { code: 404, title: 'Halaman tidak ditemukan', message: req.originalUrl, rule: null });

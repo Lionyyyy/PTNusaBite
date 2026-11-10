@@ -3,7 +3,7 @@
 <div class="content">
   <div class="callout">Simulasi payroll adalah kemampuan lintas <b>Employees</b> dan <b>Accounting</b> (bukan aplikasi Payroll terpisah). Alur: Employee → Attendance days → Payslip → Salary Journal → Bank Payment.
     Kebijakan aktif: <b><%= policy === 'proportional' ? 'gaji pokok × hari hadir ÷ 22, tunjangan penuh jika hadir ≥ 1 hari (SR-17, keputusan D-05)' : 'gaji pokok penuh (SR-16)' %></b>. Tanpa PPh 21, BPJS, lembur, atau potongan lain.</div>
-  <% if (perms['payroll.prepare']) { %>
+  <% if (canAction('payroll.prepare', 'create')) { %>
   <form method="post" action="/payroll/generate" class="panel panel-b" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <label>Periode<br><input name="period" value="<%= period %>" class="input-sm" style="width:100px" data-test="period"></label>

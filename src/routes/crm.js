@@ -34,7 +34,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'CRM Pipeline',
-      cp: { crumbs: [{ label: 'CRM' }, { label: 'Pipeline' }], list, views: ['kanban', 'list'], actions: can(req.user.role, 'crm.edit') ? '<a class="btn btn-primary" href="/crm/leads/new">New Lead</a>' : '' },
+      cp: { crumbs: [{ label: 'CRM' }, { label: 'Pipeline' }], list, views: ['kanban', 'list'], actions: can(req.user, 'crm.edit', 'create') ? '<a class="btn btn-primary" href="/crm/leads/new">New Lead</a>' : '' },
       intro: '② Tahap: New → Qualified → Proposition → Won. Lead hanya dapat dikonversi <b>sekali</b> menjadi Opportunity; tautan Lead → Opportunity → Quotation → Sales Order tetap terbaca (SR-22).',
       columns: [
         { label: 'Number', value: (r) => r.number },
@@ -64,7 +64,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'Leads',
-      cp: { crumbs: [{ label: 'CRM', href: '/crm' }, { label: 'Leads' }], list, actions: can(req.user.role, 'crm.edit') ? '<a class="btn btn-primary" href="/crm/leads/new">New</a>' : '' },
+      cp: { crumbs: [{ label: 'CRM', href: '/crm' }, { label: 'Leads' }], list, actions: can(req.user, 'crm.edit', 'create') ? '<a class="btn btn-primary" href="/crm/leads/new">New</a>' : '' },
       columns: [
         { label: 'Number', value: (r) => r.number },
         { label: 'Name', value: (r) => r.name },
@@ -77,13 +77,13 @@ module.exports = (app) => {
     });
   });
 
-  app.get('/crm/leads/new', ui.need('crm.edit'), async (req, res) => {
+  app.get('/crm/leads/new', ui.need('crm.edit', 'create'), async (req, res) => {
     res.locals.setApp('crm');
     const customers = await db.query('SELECT id, code, name FROM partners WHERE is_customer = 1 ORDER BY code');
     res.render('pages/lead_form', { title: 'New Lead', lead: null, customers, chatter: null });
   });
 
-  app.post('/crm/leads/new', ui.need('crm.edit'), async (req, res) => {
+  app.post('/crm/leads/new', ui.need('crm.edit', 'create'), async (req, res) => {
     const id = await crm.createLead(ui.ctx(req), req.body);
     ui.flash(req, 'success', 'Lead dibuat.');
     res.redirect(`/crm/leads/${id}`);
@@ -99,7 +99,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/crm/leads/:id/convert', ui.need('crm.edit'), async (req, res) => {
+  app.post('/crm/leads/:id/convert', ui.need('crm.edit', 'create'), async (req, res) => {
     const oppId = await crm.convertLead(ui.ctx(req), Number(req.params.id), req.body);
     ui.flash(req, 'success', 'Lead dikonversi menjadi Opportunity.');
     res.redirect(`/crm/opportunities/${oppId}`);
@@ -115,7 +115,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/crm/opportunities/:id/stage', ui.need('crm.edit'), async (req, res) => {
+  app.post('/crm/opportunities/:id/stage', ui.need('crm.edit', 'update'), async (req, res) => {
     await crm.setStage(ui.ctx(req), Number(req.params.id), req.body.stage);
     res.redirect(`/crm/opportunities/${req.params.id}`);
   });

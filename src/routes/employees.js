@@ -29,7 +29,7 @@ module.exports = (app) => {
     });
     res.render('pages/list_page', {
       title: 'Employees',
-      cp: { crumbs: [{ label: 'Employees' }], list, views: ['list', 'kanban'], actions: can(req.user.role, 'employees.edit') ? '<a class="btn btn-primary" href="/employees/new">New</a>' : '' },
+      cp: { crumbs: [{ label: 'Employees' }], list, views: ['list', 'kanban'], actions: can(req.user, 'employees.edit', 'create') ? '<a class="btn btn-primary" href="/employees/new">New</a>' : '' },
       columns: [
         { label: 'Employee ID', value: (r) => r.code },
         { label: 'Name', value: (r) => r.name },
@@ -48,7 +48,7 @@ module.exports = (app) => {
 
   const locations = () => db.query("SELECT id, code, name FROM locations WHERE usage_type = 'internal' ORDER BY id");
 
-  app.get('/employees/new', ui.need('employees.edit'), async (req, res) => {
+  app.get('/employees/new', ui.need('employees.edit', 'create'), async (req, res) => {
     res.locals.setApp('employees');
     res.render('pages/employee_form', {
       title: 'New Employee', isNew: true, canEdit: true, locations: await locations(), chatter: null,
@@ -56,7 +56,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/employees/new', ui.need('employees.edit'), async (req, res) => {
+  app.post('/employees/new', ui.need('employees.edit', 'create'), async (req, res) => {
     const id = await employees.createEmployee(ui.ctx(req), fields(req.body));
     ui.flash(req, 'success', 'Karyawan dibuat.');
     res.redirect(`/employees/${id}`);
@@ -66,7 +66,7 @@ module.exports = (app) => {
     res.locals.setApp('employees');
     const e = await employees.getEmployee(Number(req.params.id));
     res.render('pages/employee_form', {
-      title: `${e.code} ${e.name}`, isNew: false, e, canEdit: can(req.user.role, 'employees.edit'), locations: await locations(),
+      title: `${e.code} ${e.name}`, isNew: false, e, canEdit: can(req.user, 'employees.edit', 'update'), locations: await locations(),
       chatter: await loadChatter('hr.employee', e.id, { numbers: [e.code], related: e.payslips.map((p) => ({ label: `${p.number} (${p.state})`, href: `/payroll/${p.id}` })) }),
     });
   });

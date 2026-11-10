@@ -82,19 +82,19 @@ module.exports = (app) => {
     });
   });
 
-  app.get('/accounting/entries/new', ui.need('accounting.edit'), async (req, res) => {
+  app.get('/accounting/entries/new', ui.need('accounting.edit', 'create'), async (req, res) => {
     res.locals.setApp('accounting');
     res.render('pages/entry_new', { title: 'Jurnal manual', accounts: await accounting.listAccounts() });
   });
 
-  app.post('/accounting/entries/new', ui.need('accounting.edit'), async (req, res) => {
+  app.post('/accounting/entries/new', ui.need('accounting.edit', 'create'), async (req, res) => {
     const raw = req.body.lines || [];
     const id = await accounting.createManualEntry(ui.ctx(req), { date: req.body.date, ref: req.body.ref, lines: Array.isArray(raw) ? raw : Object.values(raw) });
     ui.flash(req, 'success', 'Draft jurnal manual dibuat (seimbang).');
     res.redirect(`/accounting/entries/${id}`);
   });
 
-  app.post('/accounting/entries/:id/post', ui.need('accounting.edit'), async (req, res) => {
+  app.post('/accounting/entries/:id/post', ui.need('accounting.edit', 'approve'), async (req, res) => {
     const number = await accounting.postManualEntry(ui.ctx(req), Number(req.params.id));
     ui.flash(req, 'success', `${number} Posted.`);
     res.redirect(`/accounting/entries/${req.params.id}`);

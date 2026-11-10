@@ -1,15 +1,27 @@
 'use strict';
 const { q, q1, getPool } = require('../db');
 
-async function listLogs({ q: search, result, docType, limit = 300 } = {}) {
+async function listLogs({ q: search, result, docType, limit = 300, includeRestricted = true, before, filters = [] } = {}) {
   const where = [];
   const params = [];
+  if (!includeRestricted) {
+    where.push(`a.role NOT IN ('master_admin', 'audit') AND COALESCE(a.doc_type, '') NOT LIKE 'admin.%'
+      AND COALESCE(a.doc_type, '') <> 'audit.report'
+      AND a.username NOT IN (SELECT username FROM users WHERE role IN ('master_admin', 'audit'))`);
+  }
   if (search) {
-    where.push('(a.doc_number LIKE ? OR a.username LIKE ? OR a.action LIKE ? OR a.message LIKE ?)');
-    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    const pattern = `%${String(search).replace(/[!%_]/g, '!$&')}%`;
+    const fields = ['doc_number', 'username', 'action', 'message', 'doc_type'];
+    where.push(`(${fields.map((field) => `a.${field} LIKE ? ESCAPE '!'`).join(' OR ')})`);
+    params.push(...fields.map(() => pattern));
   }
   if (result) { where.push('a.result = ?'); params.push(result); }
   if (docType) { where.push('a.doc_type = ?'); params.push(docType); }
+  if (before) { where.push('a.id < ?'); params.push(before); }
+  if (filters.includes('ok') && !filters.includes('blocked')) where.push("a.result = 'ok'");
+  if (filters.includes('blocked') && !filters.includes('ok')) where.push("a.result <> 'ok'");
+  if (filters.includes('denied')) where.push("a.result = 'denied'");
+  if (filters.includes('changes')) where.push("a.result = 'ok' AND a.action NOT IN ('LOGIN', 'LOGOUT', 'LOG_NOTE')");
   params.push(Number(limit));
   return q(getPool(), `SELECT a.* FROM audit_logs a ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY a.id DESC LIMIT ?`, params);
 }

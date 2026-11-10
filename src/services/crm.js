@@ -46,7 +46,7 @@ async function getOpportunity(id) {
 
 async function createLead(ctx, data) {
   return run(ctx, { action: 'LEAD_CREATE', docType: 'crm.lead' }, async (conn) => {
-    requirePerm(ctx, 'crm.edit');
+    requirePerm(ctx, 'crm.edit', null, 'create');
     const name = String(data.name || '').trim();
     if (!name) throw new BusinessError('Judul lead wajib diisi.', { rule: 'SR-22' });
     const number = await nextNumber(conn, 'crm.lead');
@@ -61,7 +61,7 @@ async function createLead(ctx, data) {
 /** SR-22: lead hanya boleh dikonversi sekali menjadi Opportunity; tautannya tetap terbaca. */
 async function convertLead(ctx, leadId, data = {}) {
   return run(ctx, { action: 'LEAD_CONVERT', docType: 'crm.lead', docId: leadId }, async (conn) => {
-    requirePerm(ctx, 'crm.edit');
+    requirePerm(ctx, 'crm.edit', null, 'create');
     const lead = await q1(conn, 'SELECT * FROM crm_leads WHERE id = ? FOR UPDATE', [leadId]);
     if (!lead) throw new NotFoundError('Lead tidak ditemukan');
     const existing = await q1(conn, 'SELECT number FROM crm_opportunities WHERE lead_id = ?', [leadId]);
@@ -85,7 +85,7 @@ async function convertLead(ctx, leadId, data = {}) {
 
 async function setStage(ctx, oppId, stage) {
   return run(ctx, { action: 'OPPORTUNITY_STAGE', docType: 'crm.opportunity', docId: oppId }, async (conn) => {
-    requirePerm(ctx, 'crm.edit');
+    requirePerm(ctx, 'crm.edit', null, 'update');
     if (!STAGES.some(([k]) => k === stage) && stage !== 'lost') throw new BusinessError('Stage tidak dikenal.', { rule: 'SR-22' });
     const o = await q1(conn, 'SELECT * FROM crm_opportunities WHERE id = ? FOR UPDATE', [oppId]);
     if (!o) throw new NotFoundError('Opportunity tidak ditemukan');

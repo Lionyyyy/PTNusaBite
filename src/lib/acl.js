@@ -8,9 +8,11 @@ const ROLES = {
   hr: 'HR',
   cashier: 'Cashier',
   owner: 'Owner',
+  master_admin: 'Master Admin',
+  audit: 'Audit',
 };
 
-// Matriks hak akses (SR-13). Owner memegang semua hak.
+// Matriks hak akses operasional (SR-13). Owner mempertahankan hak operasional penuh.
 const PERMS = {
   'contacts.view': ['sales', 'warehouse', 'finance'],
   'contacts.create_customer': ['sales', 'finance'],
@@ -43,24 +45,65 @@ const PERMS = {
   'dashboard.view': ['finance'],
   'audit.view': ['finance'],
   'admin.reset': [],
+  'masterdata.view': [],
+  'masterdata.manage': [],
+  'admin.manage': ['master_admin'],
+  'audit.review': ['audit'],
 };
 
-function can(role, perm) {
-  if (!PERMS[perm]) throw new Error(`Permission tidak dikenal: ${perm}`);
-  return role === 'owner' || PERMS[perm].includes(role);
+// Custom roles may receive business and catalog permissions. Administration and audit
+// review stay with their respective built-in roles.
+const AUDIT_READ = new Set([
+  'audit.view', 'sales.view', 'purchase.view', 'inventory.view', 'invoicing.view',
+  'accounting.view', 'employees.view', 'payroll.view', 'products.view', 'crm.view', 'contacts.view',
+]);
+const RESERVED = new Set(['admin.reset', 'admin.manage', 'audit.view', 'audit.review', 'sales.approve_discount', 'sales.revision_approve']);
+const ACTIONS = {
+  'masterdata.manage': ['create', 'update', 'delete'],
+  'contacts.create_customer': ['create', 'update'],
+  'contacts.create_vendor': ['create', 'update'],
+  'contacts.edit_credit': ['create', 'update'],
+  'products.edit': ['create', 'update'],
+  'products.edit_price': ['create', 'update'],
+  'crm.edit': ['create', 'update'],
+  'sales.edit': ['create', 'update', 'cancel'],
+  'sales.revision_request': ['create'],
+  'counter.use': ['create'],
+  'inventory.operate': ['create', 'update', 'cancel'],
+  'purchase.edit': ['create', 'update', 'cancel'],
+  'invoicing.edit': ['create', 'update', 'approve'],
+  'accounting.edit': ['create', 'update', 'approve'],
+  'employees.edit': ['create', 'update'],
+  'payroll.prepare': ['create', 'update', 'approve'],
+  'payroll.post': ['approve'],
+};
+const GRANTS = Object.keys(PERMS).filter((p) => !RESERVED.has(p)).flatMap((p) =>
+  ACTIONS[p] ? ACTIONS[p].map((operation) => `${p}:${operation}`) : [p]);
+
+function can(subject, perm, operation) {
+  if (!Object.hasOwn(PERMS, perm)) throw new Error(`Permission tidak dikenal: ${perm}`);
+  const role = typeof subject === 'string' ? subject : subject?.role;
+  if (role === 'master_admin') return ['admin.manage', 'audit.view', 'masterdata.view', 'masterdata.manage'].includes(perm);
+  if (role === 'audit') return AUDIT_READ.has(perm) || perm === 'audit.review';
+  if (role === 'owner') return !['admin.manage', 'audit.review', 'masterdata.view', 'masterdata.manage'].includes(perm);
+  if (Object.hasOwn(ROLES, role)) return PERMS[perm].includes(role);
+  if (RESERVED.has(perm) || !Array.isArray(subject?.grants)) return false;
+  if (!ACTIONS[perm]) return subject.grants.includes(perm);
+  const operations = operation ? [operation] : ACTIONS[perm];
+  return operations.some((op) => subject.grants.includes(`${perm}:${op}`));
 }
 
-function requirePerm(ctx, perm, docNumber = null) {
+function requirePerm(ctx, perm, docNumber = null, operation) {
   const role = ctx && ctx.user ? ctx.user.role : 'anonymous';
-  if (!ctx || !ctx.user || !can(role, perm)) {
+  if (!ctx || !ctx.user || !can(ctx.user, perm, operation)) {
     throw new AccessError(`Akses ditolak: peran ${ROLES[role] || role} tidak memiliki hak "${perm}" (SR-13).`, { perm, docNumber });
   }
 }
 
-function permsFor(role) {
+function permsFor(subject) {
   const out = {};
-  for (const p of Object.keys(PERMS)) out[p] = can(role, p);
+  for (const p of Object.keys(PERMS)) out[p] = can(subject, p);
   return out;
 }
 
-module.exports = { ROLES, PERMS, can, requirePerm, permsFor };
+module.exports = { ROLES, PERMS, GRANTS, can, requirePerm, permsFor };
