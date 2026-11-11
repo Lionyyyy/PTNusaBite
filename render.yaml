@@ -1,0 +1,36 @@
+# Render Blueprint — NusaBite ERP (Node.js) + MySQL di Aiven.
+# Cara pakai: Render Dashboard → New + → Blueprint → pilih repositori Lionyyyy/PTNusaBite.
+# Nilai bertanda `sync: false` TIDAK disimpan di repositori; Render akan memintanya saat Blueprint dibuat.
+services:
+  - type: web
+    name: nusabite-erp
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    # Perubahan yang hanya menyentuh dokumen/tes tidak perlu memicu deploy ulang.
+    buildFilter:
+      ignoredPaths:
+        - docs/**
+        - test/**
+        - e2e/**
+        - .github/**
+        - "*.md"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL # Service URI dari Aiven (mysql://avnadmin:...@...aivencloud.com:PORT/defaultdb?ssl-mode=REQUIRED)
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: DB_SSL_CA # isi CA certificate dari Aiven (termasuk baris BEGIN/END)
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ALLOW_RESET
+        value: "true"
+      - key: MASTER_ADMIN_INITIAL_PASSWORD # opsional; minimal 12 karakter. Lihat docs/DEPLOYMENT.md
+        sync: false

@@ -732,6 +732,7 @@ const TESTS = [
       const h = await s.as('hr');
       await go(h, '/payroll');
       await L.selectPrefix(h, '[data-test=employee]', 'E02 ');
+      await h.fill('[data-test=period]', '2026-10');
       await submit(h, '[data-test=generate]');
       const url = h.url().replace(L.BASE, '');
       await submit(h, '[data-test=approve]');
@@ -741,6 +742,7 @@ const TESTS = [
       await submit(f, '[data-test=pay]');
       await go(h, '/payroll');
       await L.selectPrefix(h, '[data-test=employee]', 'E02 ');
+      await h.fill('[data-test=period]', '2026-10');
       await submit(h, '[data-test=generate]');
       const m1 = await flash(h);
       await ev(h, 'generate_ulang_ditolak');

@@ -2,7 +2,6 @@
 const ui = require('../lib/ui');
 const db = require('../db');
 const { buildList } = require('../lib/listview');
-const { currentPeriod } = require('../lib/time');
 const policies = require('../policies');
 const payroll = require('../services/payroll');
 const { loadChatter } = require('./_chatter');
@@ -17,7 +16,7 @@ module.exports = (app) => {
       groupBys: [{ key: 'period', label: 'Period', value: (r) => r.period }, { key: 'state', label: 'Status', value: (r) => payroll.STATE_LABEL[r.state] }],
     });
     const employees = await db.query("SELECT id, code, name FROM employees WHERE status = 'active' ORDER BY code");
-    res.render('pages/payroll_list', { title: 'Payroll Simulation', list, employees, period: currentPeriod(), policy: policies.PAYROLL_POLICY });
+    res.render('pages/payroll_list', { title: 'Payroll Simulation', list, employees, period: policies.PAYROLL_PERIOD, policy: policies.PAYROLL_POLICY });
   });
 
   app.post('/payroll/generate', ui.need('payroll.view'), async (req, res) => {
