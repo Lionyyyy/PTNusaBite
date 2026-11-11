@@ -23,15 +23,18 @@ Sumber: [Aiven TLS/SSL certificates](https://aiven.io/docs/platform/concepts/tls
 
 ## Langkah 2 — Deploy aplikasi di Render (±10 menit)
 
-1. Buka <https://dashboard.render.com/register> dan daftar dengan **GitHub** (akun pemilik repositori `briankenley/PT-Nusa-Bite`).
-2. Klik **New + → Blueprint** → pilih repositori `PT-Nusa-Bite` → pilih branch yang berisi kode ini.
-3. Render membaca file `render.yaml` dan meminta nilai rahasia:
+1. Buka <https://dashboard.render.com/register> dan daftar dengan **GitHub** (akun yang punya akses ke repositori [`Lionyyyy/PTNusaBite`](https://github.com/Lionyyyy/PTNusaBite)).
+2. Klik **New + → Blueprint** → pilih repositori `PTNusaBite` → pilih branch `main`.
+3. Render membaca file [`render.yaml`](../render.yaml) dan meminta nilai rahasia:
    - `DATABASE_URL` = **Service URI** dari Aiven.
    - `DB_SSL_CA` = isi **CA certificate** dari Aiven (tempel apa adanya, termasuk baris BEGIN/END).
+   - `MASTER_ADMIN_INITIAL_PASSWORD` = boleh dikosongkan bila peran Master Admin tidak dipakai (lihat bagian paling bawah).
    - `SESSION_SECRET` dibuat otomatis oleh Render.
 4. Klik **Apply / Deploy**. Tunggu log menampilkan `NusaBite ERP berjalan di …`.
 5. Pada deploy pertama aplikasi otomatis **membuat tabel dan mengisi baseline seed** (log: `Tabel belum ada: membuat skema dan baseline seed…`).
 6. Buka URL `https://nusabite-erp-xxxx.onrender.com` → login `owner.demo` / `demo1234`.
+
+> **Layanan Render sudah ada dan dulu dibuat manual (bukan lewat Blueprint)?** Tidak perlu membuat ulang. Buka layanan itu → **Settings → Build & Deploy → Repository**, pastikan menunjuk ke `Lionyyyy/PTNusaBite` branch `main`; lalu cocokkan **Build Command** `npm ci --omit=dev`, **Start Command** `npm start`, **Health Check Path** `/healthz`, dan isi tab **Environment** sesuai tabel "Variabel lingkungan" di bawah.
 
 Sumber: [Render Blueprint YAML Reference](https://render.com/docs/blueprint-spec), [Health Checks](https://render.com/docs/health-checks), [Setting Your Node.js Version](https://render.com/docs/node-version) (repositori memakai `.node-version` = 22.22.0).
 
@@ -43,7 +46,7 @@ Sumber: [Render Blueprint YAML Reference](https://render.com/docs/blueprint-spec
 | Data baseline | login owner → Inventory → Stock | Total 773 unit, valuasi Rp5.422.000 |
 | Persisten | buat Quotation, tekan refresh, logout/login | Quotation tetap ada |
 | Peran | login `sales.demo`, buka `/accounting/entries` | 403 + tercatat di Audit |
-| Reset | Owner → Settings → Reset ke baseline | Data kembali ke baseline |
+| Reset | Owner → Settings → Reset ke baseline | Data kembali ke baseline. Tombol tidak muncul bila akun Master Admin sudah dibuat (lihat bagian paling bawah) |
 
 ## Variabel lingkungan
 
@@ -56,10 +59,11 @@ Sumber: [Render Blueprint YAML Reference](https://render.com/docs/blueprint-spec
 | `NODE_ENV` | ya | `production` (cookie `Secure`, pesan error disembunyikan). |
 | `DEMO_PASSWORD` | tidak | Password semua akun uji pada seed (default `demo1234`). |
 | `ALLOW_RESET` | tidak | `true` agar Owner dapat memulihkan baseline untuk pengujian; set `false` bila tidak diinginkan. |
+| `MASTER_ADMIN_INITIAL_PASSWORD` | tidak | Kata sandi awal akun `master.admin` (12 karakter – 72 byte). Hanya dibaca bila belum ada akun Master Admin. |
 
 ## Alternatif
 
-- **Lokal dengan Docker**: `docker compose up --build` lalu buka <http://localhost:3000>. (Dockerfile & compose disertakan; belum diuji di lingkungan pembuat karena Docker daemon tidak tersedia di sana.)
+- **Lokal dengan Docker**: `docker compose up --build` lalu buka <http://localhost:3000>. [`Dockerfile`](../Dockerfile) dan [`docker-compose.yml`](../docker-compose.yml) ada di akar repositori; diuji 2026-11-11 (aplikasi + MySQL 8.4, baseline 773 unit / Rp5.422.000).
 - **TiDB Cloud Starter** (kompatibel MySQL) bisa dipakai sebagai pengganti Aiven; uji dulu karena TiDB tidak 100% identik dengan MySQL. Sumber: [TiDB Cloud cluster tiers](https://docs.pingcap.com/tidbcloud/select-cluster-tier).
 
 ## Masalah umum
@@ -71,7 +75,8 @@ Sumber: [Render Blueprint YAML Reference](https://render.com/docs/blueprint-spec
 | `self signed certificate` / TLS error | CA tidak cocok | Tempel ulang CA certificate di `DB_SSL_CA` tanpa spasi tambahan. |
 | Login selalu kembali ke halaman login di lokal dengan `NODE_ENV=production` | Cookie `Secure` hanya dikirim lewat HTTPS | Di lokal jangan set `NODE_ENV=production`, atau akses lewat HTTPS. |
 | Halaman lambat dibuka pertama kali | Render free sedang tidur | Tunggu ±1 menit; buka URL sebelum demo. |
-### Master Admin dan Audit
+
+## Master Admin dan Audit
 
 Untuk mengaktifkan kedua peran di deployment yang sudah ada, tambahkan
 `MASTER_ADMIN_INITIAL_PASSWORD` di **Render → service NusaBite → Environment**

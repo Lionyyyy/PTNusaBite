@@ -1,0 +1,39 @@
+# Menjalankan aplikasi + MySQL di komputer sendiri:  docker compose up --build
+# Lalu buka http://localhost:3000 (login owner.demo / demo1234).
+# Hanya untuk pengembangan lokal — kata sandi di bawah bukan rahasia produksi.
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nusabite
+      MYSQL_USER: nusabite
+      MYSQL_PASSWORD: nusabite
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # NODE_ENV sengaja "development": cookie sesi bertanda Secure (mode production) tidak terkirim lewat http://localhost.
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_USER: nusabite
+      DB_PASSWORD: nusabite
+      DB_NAME: nusabite
+      SESSION_SECRET: lokal-saja-ganti-di-produksi
+    ports:
+      - "3000:3000"
+
+volumes:
+  dbdata:

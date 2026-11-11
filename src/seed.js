@@ -24,6 +24,10 @@ const TABLES = [
   'partners', 'accounts', 'taxes', 'payment_terms', 'sequences', 'users', 'company',
 ];
 
+// Tabel fitur Master Admin/Audit dibuat oleh src/access-schema.js (bukan schema.sql). Isinya merujuk akun
+// pengguna, jadi ikut dikosongkan saat baseline dipulihkan agar tidak tersisa peran/laporan tanpa pemilik.
+const ACCESS_TABLES = ['access_roles', 'master_catalog', 'audit_reports'];
+
 const DATA = {
   users: [
     ['sales.demo', 'Sales Demo', 'sales'],
@@ -171,6 +175,9 @@ async function resetBaseline({ recreate = false, actor = null } = {}) {
     } else {
       await conn.query(`SET FOREIGN_KEY_CHECKS = 0; ${TABLES.map((t) => `TRUNCATE TABLE ${t};`).join(' ')} SET FOREIGN_KEY_CHECKS = 1;`);
     }
+    const [existing] = await conn.query(
+      'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name IN (?)', [ACCESS_TABLES]);
+    for (const { name } of existing) await conn.query(`TRUNCATE TABLE \`${name}\``);
     await conn.beginTransaction();
     await insertBaseline(conn, actor);
     await conn.commit();

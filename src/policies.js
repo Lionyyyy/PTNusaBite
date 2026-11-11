@@ -19,6 +19,10 @@ module.exports = {
   // D-05 (SR-16 vs SR-17): gaji pokok proporsional hari hadir ÷ hari rencana; tunjangan penuh jika hadir ≥ 1 hari.
   PAYROLL_POLICY: 'proportional',
 
+  // Periode simulasi payroll pada dataset handout (hari hadir di employees_pay_basis adalah fixture Oktober 2026).
+  // Dipakai sebagai nilai awal form Payroll agar nomor payslip tetap PAY/2026-10/Exx kapan pun demo dijalankan.
+  PAYROLL_PERIOD: '2026-10',
+
   // D-06 (SR-20): pembayaran melebihi sisa tagihan ditolak (tidak ada pencatatan kelebihan bayar).
   ALLOW_OVERPAYMENT: false,
 
