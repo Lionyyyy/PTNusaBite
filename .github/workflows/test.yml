@@ -55,7 +55,10 @@ jobs:
       - name: Tes layanan + database (npm test)
         run: npm test
       - name: Siapkan browser Chromium
-        run: npx playwright install --with-deps chromium
+        # Tanpa --with-deps: pustaka sistem yang dibutuhkan Chromium sudah ada di image runner ubuntu-24.04.
+        # Opsi itu hanya menambah paket font lewat apt, dan langkah ini gagal saat mirror apt runner tidak terjangkau.
+        timeout-minutes: 10
+        run: npx playwright install chromium
       - name: Jalankan aplikasi
         run: |
           npm run db:reset
