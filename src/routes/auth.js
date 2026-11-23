@@ -11,6 +11,7 @@ const DEMO = [
   ['hr.demo', 'HR', 'Employees, Payslip'],
   ['cashier.demo', 'Cashier', 'Quick Counter Order'],
   ['owner.demo', 'Owner', 'Semua + persetujuan'],
+  ['audit.demo', 'Audit', 'Audit Review & laporan (hanya baca)'],
 ];
 
 function safeNext(n) {

@@ -25,9 +25,10 @@ CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(40) NOT NULL,
   full_name VARCHAR(120) NOT NULL,
-  role ENUM('sales','warehouse','finance','hr','cashier','owner') NOT NULL,
+  role VARCHAR(20) NOT NULL,
   password_hash VARCHAR(100) NOT NULL,
   active TINYINT(1) NOT NULL DEFAULT 1,
+  session_version INT UNSIGNED NOT NULL DEFAULT 0,
   UNIQUE KEY uq_users_username (username)
 ) ENGINE=InnoDB;
 

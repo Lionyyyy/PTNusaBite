@@ -16,6 +16,7 @@ const RIGHTS = {
   hr: 'Employees & tarif gaji (dengan riwayat), payslip draft/approve',
   cashier: 'Quick Counter Order (tunai/bank) di OUTLET-SUD',
   owner: 'Semua hak + persetujuan diskon > 10%, revisi dokumen Confirmed, reset baseline',
+  audit: 'Hanya baca seluruh modul, Audit Review, laporan audit; tanpa Master Admin',
 };
 
 module.exports = (app) => {
@@ -55,7 +56,7 @@ module.exports = (app) => {
 
   app.get('/settings', ui.need('admin.reset'), async (req, res) => {
     res.locals.setApp('settings');
-    const users = await db.query("SELECT username, full_name, role FROM users WHERE role IN ('sales','warehouse','finance','hr','cashier','owner') ORDER BY id");
+    const users = await db.query("SELECT username, full_name, role FROM users WHERE role IN ('sales','warehouse','finance','hr','cashier','owner','audit') ORDER BY id");
     const c = await db.one(`SELECT baseline_at, EXISTS(SELECT 1 FROM users WHERE role = 'master_admin') AS managed FROM company WHERE id = 1`);
     res.render('pages/settings', { users, rights: RIGHTS, baselineAt: c?.baseline_at, allowReset: config.allowReset && !c?.managed });
   });

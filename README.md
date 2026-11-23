@@ -22,8 +22,12 @@ Semua akun di bawah memakai kata sandi `demo1234` (dapat diganti lewat variabel 
 | `hr.demo` | HR | Employees, Payroll |
 | `cashier.demo` | Cashier | Quick Counter |
 | `owner.demo` | Owner | Semua modul, persetujuan diskon dan revisi |
+| `audit.demo` | Audit | Audit Review, laporan audit, Audit Log; semua modul hanya-baca |
 
-Dua peran tambahan di luar enam peran wajib handout: **Master Admin** (`master.admin`, kelola akun dan hak akses) dan **Audit** (hanya-baca + laporan audit). Keduanya tidak ikut baseline seed; cara mengaktifkannya ada di [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#master-admin-dan-audit).
+Dua peran tambahan di luar enam peran wajib handout, masing-masing dengan login terpisah:
+
+- **Audit** (`audit.demo`, kata sandi sama dengan akun uji lain): Transaction Review, Stock Audit, Activity Monitoring, Change History, Financial Audit, Payroll Audit, Report Audit, Discrepancy Detection. Hanya-baca; tidak dapat membuka Master Admin.
+- **Master Admin** (`master.admin`): User, Role & Permission Management, System Configuration, Master Data, Audit Log seluruh pengguna, Account Security, System Monitoring. Tidak ikut baseline seed dan tidak tampil di halaman login; kata sandinya diatur lewat `MASTER_ADMIN_INITIAL_PASSWORD` (lihat [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#master-admin-dan-audit)).
 
 ## Alur yang didukung
 
