@@ -66,8 +66,17 @@ test('Migrates old data and enforces Master Admin and Audit through HTTP', async
   }
 
   const master = await signIn('master.admin', password);
-  assert.equal((await master('/admin')).status, 200);
+  const adminPage = await master('/admin');
+  assert.equal(adminPage.status, 200);
+  assert.match(adminPage.html, /data-test="account-activity"/);
   assert.equal((await master('/sales/orders')).status, 403);
+  // Master Admin dan Audit adalah login terpisah: Master Admin tidak melihat maupun membuka aplikasi Audit.
+  const masterHome = (await master('/')).html;
+  assert.match(masterHome, /data-app="administration"/);
+  assert.doesNotMatch(masterHome, /data-app="audit"/);
+  assert.equal((await master('/audit')).status, 403);
+  assert.equal((await master('/audit/review')).status, 403);
+  assert.equal((await master('/audit/trace?number=S00007')).status, 403);
   assert.equal((await master('/admin/users', { username: 'auditor.test', full_name: 'Auditor Test', role: 'audit', password, active: '1' })).status, 302);
   assert.equal((await master('/admin/catalog')).status, 200);
   assert.equal((await master('/admin/roles', { code: 'quote_test', label: 'Quotation creator', permissions: ['sales.view', 'sales.edit:create'] })).location, '/admin#roles');
@@ -83,6 +92,9 @@ test('Migrates old data and enforces Master Admin and Audit through HTTP', async
   assert.equal((await master('/admin/catalog/delete', { kind: 'department', code: 'QA' })).status, 302);
 
   const auditor = await signIn('auditor.test', password);
+  const auditorHome = (await auditor('/')).html;
+  assert.match(auditorHome, /data-app="audit"/);
+  assert.doesNotMatch(auditorHome, /data-app="administration"/);
   assert.equal((await auditor('/audit/review')).status, 200);
   assert.equal((await auditor('/sales/orders')).status, 200);
   assert.equal((await auditor('/audit?f=changes')).status, 200);

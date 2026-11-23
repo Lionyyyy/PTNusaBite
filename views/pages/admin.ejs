@@ -5,7 +5,25 @@
     <div class="panel-h">System Monitoring · 24 jam terakhir</div>
     <div class="panel-b">
       <p><%= activity.events %> aktivitas · <%= activity.blocked || 0 %> ditolak · <%= activity.login_failures || 0 %> login gagal · <%= activity.server_errors || 0 %> kesalahan server</p>
-      <a href="/healthz">Status koneksi database</a> · <a href="/audit">Audit Log</a>
+      <a href="/healthz">Status koneksi database</a> · <a href="#activity">Account Activity</a>
+    </div>
+  </section>
+  <section class="panel" id="activity">
+    <div class="panel-h">Account Activity · 20 kejadian terakhir</div>
+    <div class="panel-b">
+      <p class="muted small">Login, login gagal, logout, dan perubahan akun/peran/konfigurasi. Log transaksi bisnis ada di aplikasi Audit dan tidak dibuka dari akun Master Admin.</p>
+      <% if (accountEvents.length) { %>
+      <table class="list" data-test="account-activity">
+        <thead><tr><th>Waktu</th><th>Pengguna</th><th>Aksi</th><th>Dokumen</th><th>Hasil</th><th>Keterangan</th></tr></thead>
+        <tbody>
+          <% for (const e of accountEvents) { %>
+          <tr><td><%= String(e.ts).slice(0, 19) %></td><td><%= e.username %> <span class="muted">(<%= e.role %>)</span></td><td><%= e.action %></td><td><%= e.doc_number || '' %></td><td><%= e.result %></td><td><%= e.message || '' %></td></tr>
+          <% } %>
+        </tbody>
+      </table>
+      <% } else { %>
+      <p class="muted">Belum ada aktivitas akun.</p>
+      <% } %>
     </div>
   </section>
   <section class="panel" id="users">

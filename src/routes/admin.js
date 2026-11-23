@@ -8,15 +8,19 @@ const admin = require('../services/admin');
 module.exports = (app) => {
   app.get('/admin', ui.need('admin.manage'), async (req, res) => {
     res.locals.setApp('administration');
-    const [users, roles, companyConfig, activity] = await Promise.all([
+    const [users, roles, companyConfig, activity, accountEvents] = await Promise.all([
       db.query('SELECT id, username, full_name, role, active FROM users ORDER BY username'),
       admin.roles(),
       db.one('SELECT name, short_name, city, currency FROM company WHERE id = 1'),
       db.one(`SELECT COUNT(*) AS events, SUM(result <> 'ok') AS blocked,
         SUM(action = 'LOGIN_FAILED') AS login_failures, SUM(action = 'SERVER_ERROR') AS server_errors
         FROM audit_logs WHERE ts >= CAST(? AS DATETIME) - INTERVAL 24 HOUR`, [nowStr()]),
+      // Hanya aktivitas akun & administrasi; log transaksi bisnis tetap milik peran Audit/Finance/Owner.
+      db.query(`SELECT ts, username, role, action, doc_number, result, message FROM audit_logs
+        WHERE action IN ('LOGIN', 'LOGIN_FAILED', 'LOGOUT') OR doc_type LIKE 'admin.%'
+        ORDER BY id DESC LIMIT 20`),
     ]);
-    res.render('pages/admin', { users, roles, grants: GRANTS, companyConfig, activity });
+    res.render('pages/admin', { users, roles, grants: GRANTS, companyConfig, activity, accountEvents });
   });
 
   app.post('/admin/users', ui.need('admin.manage'), async (req, res) => {

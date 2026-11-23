@@ -83,7 +83,9 @@ const GRANTS = Object.keys(PERMS).filter((p) => !RESERVED.has(p)).flatMap((p) =>
 function can(subject, perm, operation) {
   if (!Object.hasOwn(PERMS, perm)) throw new Error(`Permission tidak dikenal: ${perm}`);
   const role = typeof subject === 'string' ? subject : subject?.role;
-  if (role === 'master_admin') return ['admin.manage', 'audit.view', 'masterdata.view', 'masterdata.manage'].includes(perm);
+  // Master Admin dan Audit adalah login terpisah: Master Admin mengelola akun & konfigurasi dan tidak
+  // membuka aplikasi Audit; Audit hanya-baca dan tidak membuka Master Admin.
+  if (role === 'master_admin') return ['admin.manage', 'masterdata.view', 'masterdata.manage'].includes(perm);
   if (role === 'audit') return AUDIT_READ.has(perm) || perm === 'audit.review';
   if (role === 'owner') return !['admin.manage', 'audit.review', 'masterdata.view', 'masterdata.manage'].includes(perm);
   if (Object.hasOwn(ROLES, role)) return PERMS[perm].includes(role);
