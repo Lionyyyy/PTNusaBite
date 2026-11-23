@@ -86,8 +86,13 @@ pada database lama tanpa reset. Akun pertama dibuat dengan username
 `master.admin`. Setelah login berhasil, variabel kata sandi awal dapat dihapus.
 Mengubah variabel sesudah akun dibuat tidak mengganti kata sandi akun.
 
-1. Masuk sebagai `master.admin`, buka **Master Admin → User & Account Security**,
-   lalu buat akun dengan peran **Audit** dan kata sandi unik.
+Akun uji `audit.demo` (peran **Audit**, kata sandi = `DEMO_PASSWORD`) dibuat
+otomatis saat aplikasi mulai bila belum ada, juga pada database lama tanpa reset,
+dan ditampilkan di halaman login bersama akun uji lain. Bila tidak diinginkan,
+nonaktifkan lewat Master Admin; akun yang dinonaktifkan tidak dibuat ulang.
+
+1. Akun Audit tambahan dengan kata sandi unik dapat dibuat dari
+   **Master Admin → User & Account Security**.
 2. Masuk dengan akun Audit dan buka **Audit → Audit Review** untuk melihat
    transaksi, indikasi selisih, dan membuat laporan audit. Hitung fisik stok
    disimpan sebagai pembanding di laporan.

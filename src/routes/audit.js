@@ -6,9 +6,13 @@ const ui = require('../lib/ui');
 const { buildList, arr } = require('../lib/listview');
 const auditsvc = require('../services/auditsvc');
 
-module.exports = (app) => {
-  app.get('/audit', ui.need('audit.view'), async (req, res) => {
-    res.locals.setApp('audit');
+/**
+ * Daftar audit log seluruh pengguna. Dipakai di dua tempat yang terpisah:
+ * aplikasi Audit (/audit) dan aplikasi Master Admin (/admin/audit-log).
+ */
+function auditLogPage({ appKey, base, crumbs, trace }) {
+  return async (req, res) => {
+    res.locals.setApp(appKey);
     const includeRestricted = can(req.user, 'admin.manage') || can(req.user, 'audit.review');
     const pageSize = 100;
     const before = /^\d{1,20}$/.test(req.query.before) ? req.query.before : null;
@@ -39,10 +43,10 @@ module.exports = (app) => {
     const older = ui.escapeHtml(navigation.toString());
     res.render('pages/list_page', {
       title: 'Audit Log',
-      cp: { crumbs: [{ label: 'Audit' }, { label: 'Audit Log' }], list, actions: '<form method="get" action="/audit/trace" class="inline" style="display:flex;gap:6px"><input class="input" name="number" placeholder="S00008" style="width:120px"><button class="btn">Trace</button></form>' },
+      cp: { crumbs, list, actions: trace ? '<form method="get" action="/audit/trace" class="inline" style="display:flex;gap:6px"><input class="input" name="number" placeholder="S00008" style="width:120px"><button class="btn">Trace</button></form>' : '' },
       intro: 'Setiap perubahan kritis dan setiap upaya yang ditolak mencatat <b>actor, time, action, document</b> (SR-13). Result <b>denied</b> = hak akses, <b>rejected</b> = aturan bisnis/constraint.' +
-        (before ? ` <a href="/audit?${latest}">Terbaru</a>` : '') +
-        (hasOlder ? ` <a href="/audit?${older}">Aktivitas lebih lama →</a>` : ''),
+        (before ? ` <a href="${base}?${latest}">Terbaru</a>` : '') +
+        (hasOlder ? ` <a href="${base}?${older}">Aktivitas lebih lama →</a>` : ''),
       columns: [
         { label: 'Time', value: (r) => String(r.ts).slice(0, 19) },
         { label: 'Actor', value: (r) => r.username },
@@ -56,7 +60,17 @@ module.exports = (app) => {
       ],
       href: null,
     });
-  });
+  };
+}
+
+module.exports = (app) => {
+  app.get('/audit', ui.need('audit.view'),
+    auditLogPage({ appKey: 'audit', base: '/audit', crumbs: [{ label: 'Audit' }, { label: 'Audit Log' }], trace: true }));
+
+  // Master Admin: riwayat aktivitas seluruh pengguna di dalam aplikasi Master Admin sendiri,
+  // tanpa membuka aplikasi Audit (Audit Review, laporan, trace dokumen tetap milik peran Audit).
+  app.get('/admin/audit-log', ui.need('admin.manage'),
+    auditLogPage({ appKey: 'administration', base: '/admin/audit-log', crumbs: [{ label: 'Master Admin' }, { label: 'Audit Log' }], trace: false }));
 
   app.get('/audit/review', ui.need('audit.review'), async (req, res) => {
     res.locals.setApp('audit');

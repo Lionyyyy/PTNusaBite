@@ -62,7 +62,7 @@ async function saveUser(ctx, body, id) {
     if (!Object.hasOwn(ROLES, role) && !(await db.q1(conn, 'SELECT code FROM access_roles WHERE code = ?', [role]))) {
       throw new BusinessError('Peran tidak ditemukan.');
     }
-    if (previous?.username.endsWith('.demo') && ['master_admin', 'audit'].includes(role)) {
+    if (previous?.username.endsWith('.demo') && (role === 'master_admin' || (role === 'audit' && previous.role !== 'audit'))) {
       throw new BusinessError('Akun demo tidak dapat memakai peran dengan akses istimewa.');
     }
     if (id === ctx.user.id && (role !== 'master_admin' || !active)) throw new BusinessError('Pertahankan akun Master Admin Anda tetap aktif.');

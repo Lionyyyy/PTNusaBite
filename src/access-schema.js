@@ -1,5 +1,6 @@
 'use strict';
 const bcrypt = require('bcryptjs');
+const config = require('./config');
 const db = require('./db');
 
 async function ensureAccessSchema() {
@@ -34,6 +35,12 @@ async function ensureAccessSchema() {
       stock_snapshot JSON NULL,
       created_at DATETIME(3) NOT NULL
     ) ENGINE=InnoDB`);
+    // Akun uji Audit untuk database lama yang dibuat sebelum audit.demo masuk baseline seed.
+    // Hanya dibuat bila username belum ada; akun yang dinonaktifkan Master Admin tidak dihidupkan ulang.
+    if (!(await db.q1(conn, "SELECT 1 FROM users WHERE username = 'audit.demo'"))) {
+      await db.q(conn, "INSERT INTO users (username, full_name, role, password_hash) VALUES ('audit.demo', 'Audit Demo', 'audit', ?)",
+        [await bcrypt.hash(config.demoPassword, 10)]);
+    }
     const password = process.env.MASTER_ADMIN_INITIAL_PASSWORD;
     if (password && !(await db.q1(conn, "SELECT 1 FROM users WHERE role = 'master_admin' LIMIT 1"))) {
       if (password.length < 12 || Buffer.byteLength(password) > 72) {

@@ -36,6 +36,8 @@ const DATA = {
     ['hr.demo', 'HR Demo', 'hr'],
     ['cashier.demo', 'Cashier Demo', 'cashier'],
     ['owner.demo', 'Owner Demo', 'owner'],
+    // Akun uji peran Audit (hanya-baca). Master Admin tidak di-seed: kata sandinya dari MASTER_ADMIN_INITIAL_PASSWORD.
+    ['audit.demo', 'Audit Demo', 'audit'],
   ],
   payment_terms: [
     ['COD', 'At payment', 0],

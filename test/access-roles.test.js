@@ -5,6 +5,7 @@ const { assert, db, fresh } = require('./helpers');
 const { createApp } = require('../src/app');
 const { ensureAccessSchema } = require('../src/access-schema');
 const { can } = require('../src/lib/acl');
+const config = require('../src/config');
 
 function client(base) {
   const cookies = new Map();
@@ -75,6 +76,10 @@ test('Migrates old data and enforces Master Admin and Audit through HTTP', async
   assert.match(masterHome, /data-app="administration"/);
   assert.doesNotMatch(masterHome, /data-app="audit"/);
   assert.equal((await master('/audit')).status, 403);
+  // Audit Log seluruh pengguna tersedia di aplikasi Master Admin sendiri.
+  const masterLog = await master('/admin/audit-log');
+  assert.equal(masterLog.status, 200);
+  assert.match(masterLog.html, /sales\.demo|owner\.demo|LOGIN/);
   assert.equal((await master('/audit/review')).status, 403);
   assert.equal((await master('/audit/trace?number=S00007')).status, 403);
   assert.equal((await master('/admin/users', { username: 'auditor.test', full_name: 'Auditor Test', role: 'audit', password, active: '1' })).status, 302);
@@ -90,6 +95,21 @@ test('Migrates old data and enforces Master Admin and Audit through HTTP', async
   assert.equal((await master('/admin/catalog/create', { kind: 'department', code: 'QA', name: 'Quality Assurance' })).status, 302);
   assert.equal((await db.one("SELECT name FROM master_catalog WHERE kind = 'department' AND code = 'QA'")).name, 'Quality Assurance');
   assert.equal((await master('/admin/catalog/delete', { kind: 'department', code: 'QA' })).status, 302);
+
+  // Akun uji audit.demo tersedia sejak baseline, tampil di halaman login, dan memakai kata sandi demo.
+  assert.equal((await db.one("SELECT role FROM users WHERE username = 'audit.demo'")).role, 'audit');
+  assert.match((await client(base)('/login')).html, /<code>audit\.demo<\/code>/);
+  const auditDemo = await signIn('audit.demo', config.demoPassword);
+  const auditDemoHome = (await auditDemo('/')).html;
+  assert.match(auditDemoHome, /data-app="audit"/);
+  assert.doesNotMatch(auditDemoHome, /data-app="administration"/);
+  assert.equal((await auditDemo('/audit/review')).status, 200);
+  assert.equal((await auditDemo('/admin')).status, 403);
+  assert.equal((await auditDemo('/admin/audit-log')).status, 403);
+  // Akun demo (kata sandi publik) tidak boleh dinaikkan menjadi Master Admin.
+  const demoAccount = await db.one("SELECT id FROM users WHERE username = 'audit.demo'");
+  await master(`/admin/users/${demoAccount.id}`, { full_name: 'Audit Demo', role: 'master_admin', active: '1' });
+  assert.equal((await db.one('SELECT role FROM users WHERE id = ?', [demoAccount.id])).role, 'audit');
 
   const auditor = await signIn('auditor.test', password);
   const auditorHome = (await auditor('/')).html;
