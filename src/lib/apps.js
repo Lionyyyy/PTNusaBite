@@ -168,7 +168,7 @@ const APPS = [
       overview: [{ label: 'System Monitoring', href: '/admin', perm: 'admin.manage' }],
       documents: [{ label: 'User & Account Security', href: '/admin#users', perm: 'admin.manage' },
         { label: 'Role & Permission Management', href: '/admin#roles', perm: 'admin.manage' }],
-      reporting: [{ label: 'Audit Log', href: '/audit', perm: 'audit.view' }],
+      reporting: [{ label: 'Account Activity', href: '/admin#activity', perm: 'admin.manage' }],
       configuration: [{ label: 'System Configuration', href: '/admin#configuration', perm: 'admin.manage' },
         { label: 'Master Data', href: '/admin/catalog', perm: 'masterdata.view' }],
     },
